@@ -5,6 +5,8 @@ structure and local strokes comparisons.
 
 ## Overall structure of Chinese calligraphy characters evaluation. 
 
+Using the minimum bounding box and convex hull to detect the region of characters.
+
 ### Maximum CR 
 
 ### X-axis, Y-axis histgram
