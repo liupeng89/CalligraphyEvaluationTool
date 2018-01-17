@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from matplotlib import pyplot as plt
 
 from functions.AddBoundingBox import addBoundingBox
 
@@ -54,9 +55,38 @@ else:
     # src < tag
     tag_new_square = cv2.resize(tag_new_square, src_new_square.shape)
 
+# histogram
+# plt.hist(src_new_square.ravel(), 256, [0, 256]); plt.show()
+# plt.hist(tag_new_square.ravel(), 256, [0, 256]); plt.show()
 
+# x-axis and y-axis statistics histogram
+src_x_hist = np.zeros(src_new_square.shape[1])
+src_y_hist = np.zeros(src_new_square.shape[0])
 
+tag_x_hist = np.zeros(tag_new_square.shape[1])
+tag_y_hist = np.zeros(tag_new_square.shape[0])
 
+for y in range(src_new_square.shape[0]):
+    for x in range(src_new_square.shape[1]):
+        if src_new_square[y][x] == 0:
+            src_y_hist[y] += 1
+            src_x_hist[x] += 1
+
+for y in range(tag_new_square.shape[0]):
+    for x in range(tag_new_square.shape[1]):
+        if tag_new_square[y][x] == 0:
+            tag_y_hist[y] += 1
+            tag_x_hist[x] += 1
+
+print(src_x_hist)
+print(src_y_hist)
+
+plt.subplot(221); plt.plot(src_x_hist)
+plt.subplot(222); plt.plot(src_y_hist)
+plt.subplot(223); plt.plot(tag_x_hist)
+plt.subplot(224); plt.plot(tag_y_hist)
+
+plt.show()
 
 
 # img_file = "../characters/tag_bing copy.png.png"
@@ -124,7 +154,8 @@ else:
 # convex hull
 
 
-cv2.imshow("src", src_new_square)
-cv2.imshow("tag", tag_new_square)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+# cv2.imshow("src", src_new_square)
+# cv2.imshow("tag", tag_new_square)
+#
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
