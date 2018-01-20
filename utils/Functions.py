@@ -6,8 +6,8 @@ from skimage.measure import compare_ssim as ssim
 
 # Resize images of soure and target, return new square images
 def resizeImages(source, target):
-    src_minx, src_miny, src_minw, src_minh = addBoundingBox(source)
-    tag_minx, tag_miny, tag_minw, tag_minh = addBoundingBox(target)
+    src_minx, src_miny, src_minw, src_minh = calculateBoundingBox(source)
+    tag_minx, tag_miny, tag_minw, tag_minh = calculateBoundingBox(target)
 
     src_min_bounding = source[src_miny: src_miny + src_minh, src_minx: src_minx + src_minw]
     tag_min_bounding = target[tag_miny: tag_miny + tag_minh, tag_minx: tag_minx + tag_minw]
@@ -70,11 +70,25 @@ def resizeImages(source, target):
     tag_square[int(extra_width/2): int(extra_width/2)+tag_new_square.shape[0],
                 int(extra_height/2): int(extra_height/2)+ tag_new_square.shape[1]] = tag_new_square
 
+    ret, src_square = cv2.threshold(src_square, 127, 255, cv2.THRESH_BINARY)
+    ret, tag_square = cv2.threshold(tag_square, 127, 255, cv2.THRESH_BINARY)
+
     return src_square, tag_square
 
 
+# Add Minimum Bounding Box to a image
+def addMinBoundingBox(image):
+    x, y, w, h = calculateBoundingBox(image)
+
+    image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+    image = cv2.rectangle(image,(x,y),(x+w,y+h),(0,255,0),2)
+
+    return image
+
+
+
 # Add  Minimum Bounding box to the image.
-def addBoundingBox(image):
+def calculateBoundingBox(image):
     if image is None:
         return None
 
@@ -118,19 +132,61 @@ def coverTwoImages(source, target):
             elif source[y][x] == 255.0 and target[y][x] == 0.0:
                 # blue
                 coverage_img[y][x] = (255, 0, 0)
+            else:
+                # blue
+                coverage_img[y][x] = (255, 255, 255)
 
     return coverage_img
 
 
 # Coverage image with maximum coverage rate
-def coverageTwoImagesWithMaxCR(source, target):
-    src_minx, src_miny, src_minw, src_minh = addBoundingBox(source)
-    tag_minx, tag_miny, tag_minw, tag_minh = addBoundingBox(target)
+def shiftImageWithMaxCR(source, target):
+    source = np.uint8(source)
+    target = np.uint8(target)
+    src_minx, src_miny, src_minw, src_minh = calculateBoundingBox(source)
+    tag_minx, tag_miny, tag_minw, tag_minh = calculateBoundingBox(target)
 
-    new_rect = [min(src_minx, tag_minx), min(src_miny, tag_miny), max(src_minw, tag_minw), max(src_minh, tag_minh)]
+    # new rect of src and tag images
+    new_rect_x = min(src_minx, tag_minx)
+    new_rect_y = min(src_miny, tag_miny)
+    new_rect_w = max(src_minx+src_minw, tag_minx+tag_minw) - new_rect_x
+    new_rect_h = max(src_miny+src_minh, tag_miny+tag_minh) - new_rect_y
 
-    src_rect = source[src_miny: src_miny+src_minh, src_minx: src_minx+src_minw]
-    tag_rect = target[tag_miny: tag_miny+tag_minh, tag_minx: tag_minx+tag_minw]
+    # offset 0
+    offset_y0 = -tag_miny
+    offset_x0 = -tag_minx
+
+    # print("Offset o: (%d, %d)" % (offset_x0, offset_y0))
+
+    diff_x = source.shape[0] - tag_minw
+    diff_y = source.shape[1] - tag_minh
+
+    offset_x = 0
+    offset_y = 0
+
+    max_cr = -1000.0
+    for y in range(diff_y):
+        for x in range(diff_x):
+            new_tag_rect = np.ones(target.shape) * 255
+            new_tag_rect[tag_miny + offset_y0 + y: tag_miny + offset_y0 + y + tag_minh,
+                    tag_minx + offset_x0 + x: tag_minx + offset_x0 + x + tag_minw] = target[tag_miny: tag_miny + tag_minh,
+                                                                 tag_minx: tag_minx + tag_minw]
+            cr = calculateCR(new_tag_rect, source)
+            if cr > max_cr:
+                offset_x = offset_x0 + x
+                offset_y = offset_y0 + y
+                max_cr = cr
+
+    new_tag_rect = np.ones(target.shape) * 255
+    new_tag_rect[tag_miny + offset_y: tag_miny + offset_y + tag_minh,
+    tag_minx + offset_x: tag_minx + offset_x + tag_minw] = target[tag_miny: tag_miny + tag_minh,
+                                                                     tag_minx: tag_minx + tag_minw]
+
+    return new_tag_rect
+
+
+
+
 
 
 # Coverage images with maximum overlap area
@@ -147,17 +203,11 @@ def coverageTwoImagesWithMaxSSIM(source, target):
 def calculateCR(source, target):
     p_valid = np.sum(255.0 - source) / 255.0
 
-    p_less = 0; p_over = 0
-
     diff = target - source
-    for y in range(diff.shape[0]):
-        for x in range(diff.shape[1]):
-            if diff[y][x] == 255.0:
-                # less
-                p_less += 1
-            elif diff[y][x] == -255.0:
-                # over
-                p_over += 1
+
+    p_less = np.sum(diff == 255.0)
+    p_over = np.sum(diff == -255.0)
+
     cr = (p_valid - p_less - p_over) / p_valid * 100.0
     return cr
 
