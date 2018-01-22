@@ -50,12 +50,17 @@ def main():
 
 
     plt.subplot(121);
-    plt.plot(src_x_hist)
-    plt.plot(tag_x_hist)
+    line1, = plt.plot(src_x_hist, label="source")
+    line2, = plt.plot(tag_x_hist, label="target")
+    plt.xlabel("X axis")
+    plt.legend(handles=[line1, line2], loc=2)
 
     plt.subplot(122);
-    plt.plot(src_y_hist)
-    plt.plot(tag_y_hist)
+    line3, = plt.plot(src_y_hist, label="source")
+    line4, = plt.plot(tag_y_hist, label="target")
+    plt.xlabel("Y axis")
+
+    plt.legend(handles=[line3, line4], loc=2)
 
     plt.show()
 
