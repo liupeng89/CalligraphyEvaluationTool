@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from utils.Functions import resizeImages, coverTwoImages, shiftImageWithMaxCR, calculateCR
+from utils.Functions import resizeImages, coverTwoImages, shiftImageWithMaxCR, calculateCR, addIntersectedFig, addSquaredFig
 
 
 def main():
@@ -28,6 +28,9 @@ def main():
     coverage_img = coverTwoImages(src_img, tag_img)
     cr = calculateCR(src_img, tag_img)
     print("No shifting cr: %f" % cr)
+
+    # coverage_img = addIntersectedFig(coverage_img)
+    coverage_img = addSquaredFig(coverage_img)
 
     # Shift images with max CR
     # new_tag_img = shiftImageWithMaxCR(src_img, tag_img)

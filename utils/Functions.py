@@ -185,7 +185,20 @@ def shiftImageWithMaxCR(source, target):
     return new_tag_rect
 
 
+# get Center of gravity
+def getCenterOfGravity(image):
+    src_cog_x = 0; src_cog_y = 0
+    total_pixels = 0
+    for y in range(image.shape[0]):
+        for x in range(image.shape[1]):
+            if image[y][x] == 0.0:
+                src_cog_x += x
+                src_cog_y += y
+                total_pixels += 1
 
+    src_cog_x = int(src_cog_x / total_pixels)
+    src_cog_y = int(src_cog_y / total_pixels)
+    return src_cog_x, src_cog_y
 
 
 
@@ -219,9 +232,115 @@ def calculateSSIM(source, target):
 
 # Add intersected figure of RGB image
 def addIntersectedFig(image):
-    pass
+    if image is None:
+        return None
+
+    bk_img = np.ones(image.shape) * 255
+
+    # bk add border lines, width=3, color = red
+    h, w, _ = bk_img.shape
+    bk_img = cv2.line(bk_img, (2, 2), (h-4, 2), (0, 0, 255), 5)
+    bk_img = cv2.line(bk_img, (2, 2), (2, w - 4), (0, 0, 255), 5)
+    bk_img = cv2.line(bk_img, (h - 4, 2), (h - 4, w - 4), (0, 0, 255), 5)
+    bk_img = cv2.line(bk_img, (2, w - 4), (h - 4, w - 4), (0, 0, 255), 5)
+
+    # middle lines
+    middle_x = int(w/2)
+    middle_y = int(h/2)
+    bk_img = cv2.line(bk_img, (middle_y, 0), (middle_y, w-1), (0, 255, 0), 1)
+    bk_img = cv2.line(bk_img, (0, middle_x), (h-1, middle_x), (0, 255, 0), 1)
+
+    # cross lines
+    bk_img = cv2.line(bk_img, (0, 0), (h-1, w-1), (0, 255, 0), 1)
+    bk_img = cv2.line(bk_img, (h-1, 0), (0, w-1), (0, 255, 0), 1)
+
+    # crop bk and image
+    for y in range(image.shape[0]):
+        for x in range(image.shape[1]):
+            if image[y][x][0] != 255 or image[y][x][1] != 255 or image[y][x][2] != 255:
+                bk_img[y][x] = image[y][x]
+
+    return bk_img
 
 
 # Add squared figure of RGB image
 def addSquaredFig(image):
-    pass
+    if image is None:
+        return None
+
+    bk_img = np.ones(image.shape) * 255
+
+    # bk add border lines, width=3, color = red
+    h, w, _ = bk_img.shape
+    bk_img = cv2.line(bk_img, (2, 2), (h-4, 2), (0, 0, 255), 5)
+    bk_img = cv2.line(bk_img, (2, 2), (2, w - 4), (0, 0, 255), 5)
+    bk_img = cv2.line(bk_img, (h - 4, 2), (h - 4, w - 4), (0, 0, 255), 5)
+    bk_img = cv2.line(bk_img, (2, w - 4), (h - 4, w - 4), (0, 0, 255), 5)
+
+    # 1/3w, 2/3w, 1/3h, 2/3h
+    w13 = int(w / 3)
+    w23 = int(2 * w / 3)
+    h13 = int(h / 3)
+    h23 = int(2 * h / 3)
+
+    # lines
+    bk_img = cv2.line(bk_img, (h13, 0), (h13, w - 1), (0, 0, 255), 2)
+    bk_img = cv2.line(bk_img, (h23, 0), (h23, w - 1), (0, 0, 255), 2)
+
+    bk_img = cv2.line(bk_img, (0, w13), (h - 1, w13), (0, 0, 255), 2)
+    bk_img = cv2.line(bk_img, (0, w23), (h - 1, w23), (0, 0, 255), 2)
+
+    # crop bk and image
+    for y in range(image.shape[0]):
+        for x in range(image.shape[1]):
+            if image[y][x][0] != 255 or image[y][x][1] != 255 or image[y][x][2] != 255:
+                bk_img[y][x] = image[y][x]
+
+    return bk_img
+
+
+# Function to konw if we have a CCW turn
+def RightTurn(p1, p2, p3):
+    if (p3[1]-p1[1]) * (p2[0]-p1[0]) >= (p2[1]-p1[1])*(p3[0]-p1[0]):
+        return False
+    return True
+
+
+# main algorithm
+def GrahamScan(P):
+
+    P.sort()
+    L_upper = [P[0], P[1]]
+    # Compute the upper part of the hull
+    for i in range(2, len(P)):
+        L_upper.append(P[i])
+        while len(L_upper) > 2 and not RightTurn(L_upper[-1], L_upper[-2], L_upper[-3]):
+            del L_upper[-2]
+    L_lower = [P[-1], P[-2]]
+    # compute the lower part of the hull
+    for i in range(len(P)-3, -1, -1):
+        L_lower.append(P[i])
+        while len(L_lower) > 2 and not RightTurn(L_lower[-1], L_lower[-2], L_lower[-3]):
+            del L_lower[-2]
+
+    del L_lower[0]
+    del L_lower[-1]
+    L = L_upper + L_lower
+    return np.array(L)
+
+
+# get convex hull of image
+def getConvexHullOfImage(image):
+    if image is None:
+        return None
+
+    # P and L
+    P = []
+    for y in range(image.shape[0]):
+        for x in range(image.shape[1]):
+            if image[y][x] == 0.0:
+                P.append((y, x))
+
+    # Graham Scan algorithm
+    L = GrahamScan(P)
+    return L
