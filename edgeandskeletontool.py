@@ -3,8 +3,8 @@ import cv2
 
 
 def main():
-    src_path = "../strokes/src_resize 7.png"
-    tag_path = "../strokes/tag_resize 7.png"
+    src_path = "../strokes/src_strokes7.png"
+    tag_path = "../strokes/tag_strokes7.png"
 
     src_img = cv2.imread(src_path, 0)
     tag_img = cv2.imread(tag_path, 0)
