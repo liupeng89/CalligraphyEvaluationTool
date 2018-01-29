@@ -4,8 +4,8 @@ from matplotlib import pyplot as plt
 
 
 def main():
-    src_path = "src_resize.png"
-    tag_path = "tag_resize.png"
+    src_path = "../chars/src_dan_svg_simple_resized.png"
+    tag_path = "../chars/tag_dan_svg_simple_resized.png"
 
     src_img = cv2.imread(src_path, 0)
     tag_img = cv2.imread(tag_path, 0)
@@ -49,18 +49,18 @@ def main():
     plt.plot(tag_y_hist)
 
 
-    plt.subplot(121);
-    line1, = plt.plot(src_x_hist, label="source")
-    line2, = plt.plot(tag_x_hist, label="target")
-    plt.xlabel("X axis")
-    plt.legend(handles=[line1, line2], loc=2)
-
-    plt.subplot(122);
-    line3, = plt.plot(src_y_hist, label="source")
-    line4, = plt.plot(tag_y_hist, label="target")
-    plt.xlabel("Y axis")
-
-    plt.legend(handles=[line3, line4], loc=2)
+    # plt.subplot(121);
+    # line1, = plt.plot(src_x_hist, label="source")
+    # line2, = plt.plot(tag_x_hist, label="target")
+    # plt.xlabel("X axis")
+    # plt.legend(handles=[line1, line2], loc=2)
+    #
+    # plt.subplot(122);
+    # line3, = plt.plot(src_y_hist, label="source")
+    # line4, = plt.plot(tag_y_hist, label="target")
+    # plt.xlabel("Y axis")
+    #
+    # plt.legend(handles=[line3, line4], loc=2)
 
     plt.show()
 

@@ -3,8 +3,8 @@ import cv2
 
 
 def main():
-    src_path = "src_resize.png"
-    tag_path = "tag_resize.png"
+    src_path = "../chars/src_dan_svg_simple_resized.png"
+    tag_path = "../chars/tag_dan_svg_simple_resized.png"
 
     src_img = cv2.imread(src_path, 0)
     tag_img = cv2.imread(tag_path, 0)

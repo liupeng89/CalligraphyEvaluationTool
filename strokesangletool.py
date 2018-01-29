@@ -1,10 +1,11 @@
 import numpy as np
 import cv2
+from utils.Functions import addIntersectedFig
 
 
 def main():
-    src_path = "../strokes/src_resize 7.png"
-    tag_path = "../strokes/tag_resize 7.png"
+    src_path = "../strokes/src_strokes2.png"
+    tag_path = "../strokes/tag_strokes2.png"
 
     src_img = cv2.imread(src_path, 0)
     tag_img = cv2.imread(tag_path, 0)
@@ -23,6 +24,7 @@ def main():
 
     rows, cols = src_img.shape
     [vx, vy, x, y] = cv2.fitLine(src_cnt, cv2.DIST_L2, 0, 0.01, 0.01)
+
     lefty = int((-x * vy / vx) + y)
     righty = int(((cols - x) * vy / vx) + y)
     cv2.line(src_img_rgb, (cols - 1, righty), (0, lefty), (0, 255, 0), 2)
@@ -35,9 +37,11 @@ def main():
     cv2.line(tag_img_rgb, (cols - 1, righty), (0, lefty), (0, 255, 0), 2)
     cv2.line(tag_img_rgb, (cols - 1, lefty), (0, lefty), (0, 0, 255), 1)
 
+    src_img_rgb_ = addIntersectedFig(src_img_rgb)
+    tag_img_rgb_ = addIntersectedFig(tag_img_rgb)
 
-    cv2.imshow("src img", src_img_rgb)
-    cv2.imshow("tag img", tag_img_rgb)
+    cv2.imshow("src img", src_img_rgb_)
+    cv2.imshow("tag img", tag_img_rgb_)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 

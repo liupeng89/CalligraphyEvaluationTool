@@ -1,7 +1,14 @@
 # CalligraphyEvaluationTool
 
-This tool is used to evaluate the Chinese calligraphy characters, including the overall
-structure and local strokes comparisons.
+Those tools are used to comparse the Chinese calligraphy, including the 
+global features and stroke features comparisons. Because when people
+ appreciate something, they first get a holistic impression(global 
+ features) and then go to details(strokes).
+
+## Image pre-process
+
+The image pre-process mainly contains image cropping, image binary, image 
+inverting, de-noising, removeing background, etc. 
 
 ## Overall structure of Chinese calligraphy characters evaluation. 
 

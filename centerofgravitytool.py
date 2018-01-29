@@ -1,11 +1,11 @@
 import numpy as np
 import cv2
-from utils.Functions import  getCenterOfGravity
+from utils.Functions import  getCenterOfGravity, addIntersectedFig
 
 
 def main():
-    src_path = "src_resize.png"
-    tag_path = "tag_resize.png"
+    src_path = "../chars/src_dan_svg_simple_resized.png"
+    tag_path = "../chars/tag_dan_svg_simple_resized.png"
 
     src_img = cv2.imread(src_path, 0)
     tag_img = cv2.imread(tag_path, 0)
@@ -26,8 +26,12 @@ def main():
     tag_img_rgb = cv2.circle(tag_img_rgb, (tag_cog_y, tag_cog_x), 4, (0, 0, 255), -1)
     print("tag : (%d, %d)" % (tag_cog_x, tag_cog_y))
 
-    cv2.imshow("src", src_img_rgb)
-    cv2.imshow("tag", tag_img_rgb)
+    # add intersect lines
+    src_img_rgb_ = addIntersectedFig(src_img_rgb)
+    tag_img_rgb_ = addIntersectedFig(tag_img_rgb)
+
+    cv2.imshow("src", src_img_rgb_)
+    cv2.imshow("tag", tag_img_rgb_)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 

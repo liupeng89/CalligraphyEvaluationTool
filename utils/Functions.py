@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 from skimage.measure import compare_ssim as ssim
+from scipy.spatial import ConvexHull
 
 
 # Resize images of soure and target, return new square images
@@ -247,12 +248,12 @@ def addIntersectedFig(image):
     # middle lines
     middle_x = int(w/2)
     middle_y = int(h/2)
-    bk_img = cv2.line(bk_img, (middle_y, 0), (middle_y, w-1), (0, 255, 0), 1)
-    bk_img = cv2.line(bk_img, (0, middle_x), (h-1, middle_x), (0, 255, 0), 1)
+    bk_img = cv2.line(bk_img, (middle_y, 0), (middle_y, w-1), (0, 255, 0), 2)
+    bk_img = cv2.line(bk_img, (0, middle_x), (h-1, middle_x), (0, 255, 0), 2)
 
     # cross lines
-    bk_img = cv2.line(bk_img, (0, 0), (h-1, w-1), (0, 255, 0), 1)
-    bk_img = cv2.line(bk_img, (h-1, 0), (0, w-1), (0, 255, 0), 1)
+    bk_img = cv2.line(bk_img, (0, 0), (h-1, w-1), (0, 255, 0), 2)
+    bk_img = cv2.line(bk_img, (h-1, 0), (0, w-1), (0, 255, 0), 2)
 
     # crop bk and image
     for y in range(image.shape[0]):
@@ -339,8 +340,38 @@ def getConvexHullOfImage(image):
     for y in range(image.shape[0]):
         for x in range(image.shape[1]):
             if image[y][x] == 0.0:
-                P.append((y, x))
+                P.append((x, y))
 
     # Graham Scan algorithm
     L = GrahamScan(P)
     return L
+
+
+# Get Polygon Area (y,x)
+def getPolygonArea(points):
+    if points is None:
+        return 0.0
+    area = 0.0
+    i = j = len(points)-1
+
+    for i in range(len(points)):
+        area += (points[j][1] + points[i][1]) * (points[j][0] - points[i][0])
+        j = i
+
+    return area * 0.5
+
+
+# Get vaild pixels Area or number
+def getValidPixelsArea(image):
+    if image is None:
+        return 0.0
+    return np.sum(255.0 - image) / 255.0
+
+
+# get the area of convex hull
+def getAreaOfConvexHull(L):
+    if L == None:
+        return 0.0
+    lines = np.hstack([L, np.roll(L, -1, axis=0)])
+    area = 0.5 * abs(sum(x1 * y2 - x2 * y1 for x1, y1, x2, y2 in lines))
+    return area
