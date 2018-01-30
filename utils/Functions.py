@@ -375,3 +375,8 @@ def getAreaOfConvexHull(L):
     lines = np.hstack([L, np.roll(L, -1, axis=0)])
     area = 0.5 * abs(sum(x1 * y2 - x2 * y1 for x1, y1, x2, y2 in lines))
     return area
+
+
+# image rotate
+def rotate(image, degree):
+    pass
