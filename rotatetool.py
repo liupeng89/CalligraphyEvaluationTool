@@ -1,9 +1,9 @@
 import cv2
-from utils.Functions import resizeImages
+import numpy as np
+from utils.Functions import rotate, resizeImages, calculateBoundingBox, rotate_character
 
 
 def main():
-
     src_path = "../chars/src_dan_svg_simple.png"
     tag_path = "../chars/tag_dan_svg_simple.png"
 
@@ -17,17 +17,13 @@ def main():
 
     src_img, tag_img = resizeImages(src_img, tag_img)
 
-    print(src_img.shape)
-    print(tag_img.shape)
+    dst = rotate_character(src_img, 90)
 
-    # cv2.imwrite('../chars/src_dan_svg_simple_resized.png', src_img)
-    # cv2.imwrite('../chars/tag_dan_svg_simple_resized.png', tag_img)
-
-    cv2.imshow("source", src_img)
-    cv2.imshow("target", tag_img)
-
+    cv2.imshow("src img", src_img)
+    cv2.imshow("rotate img", dst)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
 
 
 if __name__ == '__main__':

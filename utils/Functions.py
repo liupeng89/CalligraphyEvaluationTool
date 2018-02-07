@@ -1,11 +1,13 @@
 import cv2
 import numpy as np
+from math import sin, cos, sqrt
+
 
 from skimage.measure import compare_ssim as ssim
-from scipy.spatial import ConvexHull
 
 
 # Resize images of soure and target, return new square images
+# The width of new square should larger than the length of diagonal line of minimum bounding box.
 def resizeImages(source, target):
     src_minx, src_miny, src_minw, src_minh = calculateBoundingBox(source)
     tag_minx, tag_miny, tag_minw, tag_minh = calculateBoundingBox(target)
@@ -51,28 +53,61 @@ def resizeImages(source, target):
         # src < tag
         tag_new_square = cv2.resize(tag_new_square, src_new_square.shape)
 
-    # border add extra white space:  Width * 10%
-    # source
-    new_width = src_new_square.shape[0]
-    new_height = src_new_square.shape[1]
+    # Border add extra white space, and the width of new square should larger than the length of diagonal
+    #  line of new bounding box
+    src_new_square = np.uint8(src_new_square)
+    tag_new_square = np.uint8(tag_new_square)
+    src_new_minx, src_new_miny, src_new_minw, src_new_minh = calculateBoundingBox(src_new_square)
+    tag_new_minx, tag_new_miny, tag_new_minw, tag_new_minh = calculateBoundingBox(tag_new_square)
 
-    extra_width = int(new_width * 0.1)
-    extra_height = int(new_height * 0.1)
+    src_diag_line = int(sqrt(src_new_minw * src_new_minw + src_new_minh * src_new_minh))
+    tag_diag_line = int(sqrt(tag_new_minw * tag_new_minw + tag_new_minh * tag_new_minh))
 
-    new_width += extra_width
-    new_height += extra_height
+    new_width = max(src_diag_line, tag_diag_line)
 
-    src_square = np.ones((new_width, new_height)) * 255
-    tag_square = np.ones((new_width, new_height)) * 255
+    # add
+    src_square = np.ones((new_width, new_width)) * 255
+    tag_square = np.ones((new_width, new_width)) * 255
 
-    src_square[int(extra_width/2): int(extra_width/2)+src_new_square.shape[0],
-                int(extra_height/2): int(extra_height/2) + src_new_square.shape[1]] = src_new_square
+    src_extra_w = new_width - src_new_square.shape[0]
+    src_extra_h = new_width - src_new_square.shape[1]
 
-    tag_square[int(extra_width/2): int(extra_width/2)+tag_new_square.shape[0],
-                int(extra_height/2): int(extra_height/2)+ tag_new_square.shape[1]] = tag_new_square
+    src_square[int(src_extra_w / 2): int(src_extra_w / 2) + src_new_square.shape[0],
+    int(src_extra_h / 2): int(src_extra_h / 2) + src_new_square.shape[1]] = src_new_square
+
+    tag_extra_w = new_width - tag_new_square.shape[0]
+    tag_extra_h = new_width - tag_new_square.shape[1]
+
+    tag_square[int(tag_extra_w / 2): int(tag_extra_w / 2) + tag_new_square.shape[0],
+    int(tag_extra_h / 2): int(tag_extra_h / 2) + tag_new_square.shape[1]] = tag_new_square
 
     ret, src_square = cv2.threshold(src_square, 127, 255, cv2.THRESH_BINARY)
     ret, tag_square = cv2.threshold(tag_square, 127, 255, cv2.THRESH_BINARY)
+
+
+
+    # # border add extra white space:  Width * 10%
+    # # source
+    # new_width = src_new_square.shape[0]
+    # new_height = src_new_square.shape[1]
+    #
+    # extra_width = int(new_width * 0.1)
+    # extra_height = int(new_height * 0.1)
+    #
+    # new_width += extra_width
+    # new_height += extra_height
+    #
+    # src_square = np.ones((new_width, new_height)) * 255
+    # tag_square = np.ones((new_width, new_height)) * 255
+    #
+    # src_square[int(extra_width/2): int(extra_width/2)+src_new_square.shape[0],
+    #             int(extra_height/2): int(extra_height/2) + src_new_square.shape[1]] = src_new_square
+    #
+    # tag_square[int(extra_width/2): int(extra_width/2)+tag_new_square.shape[0],
+    #             int(extra_height/2): int(extra_height/2)+ tag_new_square.shape[1]] = tag_new_square
+    #
+    # ret, src_square = cv2.threshold(src_square, 127, 255, cv2.THRESH_BINARY)
+    # ret, tag_square = cv2.threshold(tag_square, 127, 255, cv2.THRESH_BINARY)
 
     return src_square, tag_square
 
@@ -85,7 +120,6 @@ def addMinBoundingBox(image):
     image = cv2.rectangle(image,(x,y),(x+w,y+h),(0,255,0),2)
 
     return image
-
 
 
 # Add  Minimum Bounding box to the image.
@@ -112,6 +146,28 @@ def calculateBoundingBox(image):
         maxx = max(x+w, maxx); maxy = max(y+h, maxy)
 
     return minx, miny, maxx-minx, maxy-miny
+
+
+# get all bounding boxes from image
+def getBoundingBoxes(image):
+    if image is None:
+        return None
+    # moments
+    im2, contours, _ = cv2.findContours(image, 1, 2)
+
+    result = []
+    for i in range(len(contours)):
+        item = []
+        x, y, w, h = cv2.boundingRect(contours[i])
+        item.append(x)
+        item.append(y)
+        item.append(w+2)
+        item.append(h+2)
+
+        result.append(item)
+
+    return result
+
 
 
 # Coverage two images: source image is red image, and target image is blue image
@@ -377,6 +433,149 @@ def getAreaOfConvexHull(L):
     return area
 
 
-# image rotate
-def rotate(image, degree):
-    pass
+# image rotate theta degree
+def rotate(image, theta):
+    if image is None:
+        return None
+
+    # bounding box
+    bx0, by0, bw, bh = calculateBoundingBox(image)
+
+    # center of retota
+    x0 = bx0 + int(bw/2)
+    y0 = by0 + int(bh/2)
+
+    # new image of square
+    new_img = np.ones(image.shape) * 255
+
+    # rotate
+    for y in range(by0, by0+bh):
+        for x in range(bx0, bx0+bw):
+            x2 = round(cos(theta) * (x-x0) - sin(theta) * (y-y0)) + x0
+            y2 = round(sin(theta) * (x-x0) + cos(theta) * (y-y0)) + y0
+
+            new_img[y2][x2] = image[y][x]
+
+    return new_img
+
+
+# rotate character with angle.
+def rotate_character(image, angle):
+    if image is None:
+        return None
+
+    image = np.uint8(image)
+
+    # original image and four rectangle points
+    rx, ry, rw, rh = calculateBoundingBox(image)
+    cx = rx + int(rw/2)
+    cy = ry + int(rh/2)
+
+    # invert color from white to black background
+    image = 255 - image
+
+    # rotate
+    M = cv2.getRotationMatrix2D((cy, cx), angle, 1)
+    dst = cv2.warpAffine(image, M, image.shape)
+
+    # invert color from black to white background
+    dst = 255 - dst
+    dst = np.uint8(dst)
+    return dst
+
+
+# return the connected components
+def getConnectedComponents(image, connectivity=4):
+    if image is None:
+        return None
+    # the image is black vaild pixels and white background pixels
+    image = cv2.bitwise_not(image) # inverting the color
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(image, connectivity)
+    components = []
+    if num_labels == 0:
+        return None
+
+    for i in range(1, num_labels):
+        mask = labels==i
+        mask = np.uint8(mask)
+        fig = cv2.bitwise_and(image, image, mask=mask)
+        fig = cv2.bitwise_not(fig)
+        components.append(fig)
+
+    return components
+
+
+
+# rotate image with center point and angle
+# def rotate_image(image, center, angle):
+#     if image is None:
+#         return None
+#     M = cv2.getRotationMatrix2D(center, angle, 1)
+#     dst = cv2.warpAffine(image, M, image.shape)
+#     return dst
+
+
+# image rotate with angle and rotate point (y,x)
+# def rotate_image(image, angle, center):
+#     if image is None:
+#         return None
+#
+#     # Get the image size
+#     image_size = (image.shape[1], image.shape[0])
+#
+#     # Convert the opencv 3x2 rotation matrix to 3x3
+#     rot_mat = np.vstack([cv2.getRotationMatrix2D(center, angle, 1.0), [0, 0, 1]])
+#
+#     rot_mat_notranslate = np.matrix(rot_mat[0:2, 0:2])
+#
+#     # Shorthand for below calcs
+#     image_w2 = image_size[0] * 0.5
+#     image_h2 = image_size[1] * 0.5
+#
+#     # Obtain the rotated coordinates of the image corners
+#     rotated_coords = [
+#         (np.array([-image_w2, image_h2]) * rot_mat_notranslate).A[0],
+#         (np.array([image_w2, image_h2]) * rot_mat_notranslate).A[0],
+#         (np.array([-image_w2, -image_h2]) * rot_mat_notranslate).A[0],
+#         (np.array([image_w2, -image_h2]) * rot_mat_notranslate).A[0]
+#     ]
+#
+#     # Find the size of the new image
+#     x_coords = [pt[0] for pt in rotated_coords]
+#     x_pos = [x for x in x_coords if x > 0]
+#     x_neg = [x for x in x_coords if x < 0]
+#
+#     y_coords = [pt[1] for pt in rotated_coords]
+#     y_pos = [y for y in y_coords if y > 0]
+#     y_neg = [y for y in y_coords if y < 0]
+#
+#     right_bound = max(x_pos)
+#     left_bound = min(x_neg)
+#     top_bound = max(y_pos)
+#     bot_bound = min(y_neg)
+#
+#     new_w = int(abs(right_bound - left_bound))
+#     new_h = int(abs(top_bound - bot_bound))
+#
+#     # We require a translation matrix to keep the image centred
+#     trans_mat = np.matrix([
+#         [1, 0, int(new_w * 0.5 - image_w2)],
+#         [0, 1, int(new_h * 0.5 - image_h2)],
+#         [0, 0, 1]
+#     ])
+#
+#     # Compute the tranform for the combined rotation and translation
+#     affine_mat = (np.matrix(trans_mat) * np.matrix(rot_mat))[0:2, :]
+#
+#     # Apply the transform
+#     result = cv2.warpAffine(
+#         image,
+#         affine_mat,
+#         (new_w, new_h),
+#         flags=cv2.INTER_LINEAR
+#     )
+#
+#     return result
+
+
+
