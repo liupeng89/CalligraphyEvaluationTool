@@ -137,10 +137,6 @@ def main():
     for box in boxes_nointersected:
         img_rgb_nointersected = cv2.rectangle(img_rgb_nointersected, (box[0], box[1]), (box[0] + box[2], box[1] + box[3]), (0, 0, 255), 1)
 
-
-
-
-
     cv2.imshow("noinside", img_rgb_noinside)
     cv2.imshow("nointersected", img_rgb_nointersected)
 
@@ -184,9 +180,6 @@ def combineRectangles(rectangles, rect_list):
         new_rect_y2 = y2
 
     return new_rect_x1, new_rect_y1, new_rect_x2 - new_rect_x1, new_rect_y2 - new_rect_y1
-
-
-
 
 
 if __name__ == '__main__':

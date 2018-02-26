@@ -564,5 +564,42 @@ def getSkeletonOfImage(image, shape=cv2.MORPH_CROSS, kernel=(3, 3)):
     return skel
 
 
+def getNumberOfValidPixels(image, x, y):
+    valid_num = 0
+
+    # X2 point
+    if image[y - 1][x] == 0.0:
+        valid_num += 1
+
+    # X3 point
+    if image[y - 1][x + 1] == 0.0:
+        valid_num += 1
+
+    # X4 point
+    if image[y][x + 1] == 0.0:
+        valid_num += 1
+
+    # X5 point
+    if image[y + 1][x + 1] == 0.0:
+        valid_num += 1
+
+    # X6 point
+    if image[y + 1][x] == 0.0:
+        valid_num += 1
+
+    # X7 point
+    if image[y + 1][x - 1] == 0.0:
+        valid_num += 1
+
+    # X8 point
+    if image[y][x - 1] == 0.0:
+        valid_num += 1
+
+    # X9 point
+    if image[y - 1][x - 1] == 0.0:
+        valid_num += 1
+
+    return valid_num
+
 
 

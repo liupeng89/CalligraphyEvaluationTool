@@ -655,9 +655,11 @@
 #
 # print(len(src_box))
 
+import math
 import cv2
 import numpy as np
 from skimage.morphology import skeletonize
+from utils.Functions import getNumberOfValidPixels
 
 src_path = "../strokes/src_dan_svg_simple_resized.png"
 
@@ -680,47 +682,43 @@ src_skel = np.array(src_skel, dtype=np.uint8)
 
 src_skel_rgb = cv2.cvtColor(src_skel, cv2.COLOR_GRAY2BGR)
 
+# end points of lines
+end_points_list = []
+for y in range(1, src_skel.shape[0]-1):
+    for x in range(1, src_skel.shape[1]-1):
+        if src_skel[y][x] == 0.0:
+            # black points
+            black_num = getNumberOfValidPixels(src_skel, x, y)
+
+            # end points
+            if black_num == 1:
+                print(black_num)
+                src_skel_rgb[y][x] = (0, 0, 255)
+                end_points_list.append((x, y))
+
+print('len of end points: %d' % len(end_points_list))
+
+# cross points
+DIST_THRESHOLD = 20
+cross_points_list = []
 for y in range(1, src_skel.shape[0]-1):
     for x in range(1, src_skel.shape[1]-1):
         if src_skel[y][x] == 0.0:
             # black
-            black_num = 0
-            # X2 point
-            if src_skel[y-1][x] == 0.0:
-                black_num += 1
-            # X3 point
-            if src_skel[y-1][x+1] == 0.0:
-                black_num += 1
-
-            # X4 point
-            if src_skel[y][x+1] == 0.0:
-                black_num += 1
-
-            # X5 point
-            if src_skel[y+1][x+1] == 0.0:
-                black_num += 1
-
-            # X6 point
-            if src_skel[y+1][x] == 0.0:
-                black_num += 1
-
-            # X7 point
-            if src_skel[y+1][x-1] == 0.0:
-                black_num += 1
-
-            # X8 point
-            if src_skel[y][x-1] == 0.0:
-                black_num += 1
-
-            # X9 point
-            if src_skel[y-1][x-1] == 0.0:
-                black_num += 1
+            black_num = getNumberOfValidPixels(src_skel, x, y)
 
             # normal point = 2 or not normal
-            if black_num > 2 :
-                print(black_num)
-                src_skel_rgb[y][x] = (255, 0, 0)
+            if black_num > 2:
+                for (x_, y_) in end_points_list:
+                    dist_ = math.sqrt((x - x_) * (x - x_) + (y - y_) * (y - y_))
+                    if dist_ > DIST_THRESHOLD:
+                        # true cross point
+                        print(black_num)
+                        src_skel_rgb[y][x] = (255, 0, 0)
+                        cross_points_list.append((x, y))
+                        break
 
+print('len of cross points: %d ' % len(cross_points_list))
 
 print(np.min(src_skel), np.max(src_skel))
 
