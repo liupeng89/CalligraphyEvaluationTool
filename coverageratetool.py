@@ -1,11 +1,12 @@
 import cv2
-import numpy as np
 from utils.Functions import resizeImages, coverTwoImages, shiftImageWithMaxCR, calculateCR, addIntersectedFig, addSquaredFig
 
 
 def main():
-    src_path = "../chars/src_dan_svg_simple_resized.png"
-    tag_path = "../chars/tag_dan_svg_simple_resized.png"
+    # src_path = "../chars/src_dan_svg_simple_resized.png"
+    # tag_path = "../chars/tag_dan_svg_simple_resized.png"
+    src_path = "../strokes/src_strokes4.png"
+    tag_path = "../strokes/tag_strokes4.png"
 
     # src_path = "../strokes/src_strokes1.png"
     # tag_path = "../strokes/tag_strokes1.png"
