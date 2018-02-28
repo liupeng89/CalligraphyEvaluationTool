@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
-from utils.Functions import calculateBoundingBox, getContourOfImage, getSkeletonOfImage, getRotatedMinimumBoundingBox
+from utils.Functions import calculateBoundingBox, getContourOfImage, \
+    getCrossPointsOfSkeletonLine, getEndPointsOfSkeletonLine, removeBranchOfSkeletonLine
+from skimage.morphology import skeletonize
 
 
 def main():
@@ -31,14 +33,35 @@ def main():
     cv2.imshow("src edge", src_edge)
     cv2.imshow("tag edge", tag_edge)
 
-
     # get the skeletons of strokes based on the thinning algorithm
+    src_img_ = src_region != 255
+    tag_img_ = tag_region != 255
 
-    src_skeleton = getSkeletonOfImage(src_region)
-    tag_skeleton = getSkeletonOfImage(tag_region)
+    src_skel = skeletonize(src_img_)
+    tag_skel = skeletonize(tag_img_)
 
-    cv2.imshow("src skel", src_skeleton)
-    cv2.imshow("tag skel", tag_skeleton)
+    src_skel = (1 - src_skel) * 255
+    tag_skel = (1 - tag_skel) * 255
+
+    src_skel = np.array(src_skel, dtype=np.uint8)
+    tag_skel = np.array(tag_skel, dtype=np.uint8)
+
+    src_end_points = getEndPointsOfSkeletonLine(src_skel)
+    tag_end_points = getEndPointsOfSkeletonLine(tag_skel)
+
+    src_cross_points = getCrossPointsOfSkeletonLine(src_skel)
+    tag_cross_points = getCrossPointsOfSkeletonLine(tag_skel)
+
+    # if len(src_cross_points) > 0:
+    #     # exist branches
+    #     src_skel = removeBranchOfSkeletonLine(src_skel, src_end_points, src_cross_points)
+    #
+    # if len(tag_cross_points) > 0:
+    #     # exist branches
+    #     tag_skel = removeBranchOfSkeletonLine(tag_skel, tag_end_points, tag_cross_points)
+
+    cv2.imshow("src skel", src_skel)
+    cv2.imshow("tag skel", tag_skel)
 
     # split the strokes based on the rule: begin, middle and the end parts.
     src_regions = splitStrokes(src_region, type="LongHeng")
@@ -95,14 +118,6 @@ def splitStrokes(image, type):
     # Type 3: ShortHeng, the 1/2 part is the begining, the rest 1/2 part is the ending, and no middle part
     if type == 'ShortHeng':
         pass
-
-
-
-
-
-
-
-
 
 
 if __name__ == '__main__':
