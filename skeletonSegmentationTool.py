@@ -205,38 +205,48 @@ def getPointsOfExtraBranchOfSkeletonLine(image, start_x, start_y, end_x, end_y):
 
     while(True):
         print(start_point)
+        print((end_x, end_y))
+        print("----")
         # P2
         if image[start_point[1]-1][start_point[0]] == 0.0 and (start_point[0], start_point[1]-1) not in \
                 extra_branch_points:
             next_point = (start_point[0], start_point[1]-1)
+            print(next_point)
         # P3
         if image[start_point[1]-1][start_point[0]+1] == 0.0 and (start_point[0]+1, start_point[1]-1) not in \
                 extra_branch_points:
             next_point = (start_point[0]+1, start_point[1]-1)
+            print(next_point)
         # P4
         if image[start_point[1]][start_point[0]+1] == 0.0 and (start_point[0]+1, start_point[1]) not in \
                 extra_branch_points:
             next_point = (start_point[0]+1, start_point[1])
+            print(next_point)
         # P5
         if image[start_point[1]+1][start_point[0]+1] == 0.0 and (start_point[0]+1, start_point[1]+1) not in \
                 extra_branch_points:
             next_point = (start_point[0]+1, start_point[1]+1)
+            print(next_point)
         # P6
         if image[start_point[1]+1][start_point[0]] == 0.0 and (start_point[0], start_point[1]+1) not in \
                 extra_branch_points:
             next_point = (start_point[0], start_point[1]+1)
+            print(next_point)
         # P7
         if image[start_point[1]+1][start_point[0]-1] == 0.0 and (start_point[0]-1, start_point[1]+1) not in \
-                (start_point[0] - 1, start_point[1] + 1):
+                extra_branch_points:
             next_point = (start_point[0]-1, start_point[1]+1)
+            print(next_point)
         # P8
         if image[start_point[1]][start_point[0]-1] == 0.0 and (start_point[0]-1, start_point[1]) not in \
                 extra_branch_points:
             next_point = (start_point[0]-1, start_point[1])
+            print(next_point)
         # P9
         if image[start_point[1]-1][start_point[0]-1] == 0.0 and (start_point[0]-1, start_point[1]-1) not in \
                 extra_branch_points:
             next_point = (start_point[0]-1, start_point[1]-1)
+            print(next_point)
 
         extra_branch_points.append(start_point)
 
