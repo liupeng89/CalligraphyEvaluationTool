@@ -655,84 +655,129 @@
 #
 # print(len(src_box))
 
-import math
+# import math
+# import cv2
+# import numpy as np
+# from skimage.morphology import skeletonize
+# from utils.Functions import getNumberOfValidPixels
+#
+# src_path = "../strokes/test.png"
+#
+# src_img = cv2.imread(src_path, 0)
+# img_rgb = cv2.cvtColor(src_img, cv2.COLOR_GRAY2RGB)
+#
+#
+# # threshold
+# _, src_img = cv2.threshold(src_img, 127, 255, cv2.THRESH_BINARY)
+#
+#
+# src_img_ = src_img != 255
+#
+# print(src_img_)
+# src_skel = skeletonize(src_img_)
+#
+# src_skel = (1 - src_skel) * 255
+#
+# src_skel = np.array(src_skel, dtype=np.uint8)
+#
+# src_skel_rgb = cv2.cvtColor(src_skel, cv2.COLOR_GRAY2BGR)
+#
+# # end points of lines
+# end_points_list = []
+# for y in range(1, src_skel.shape[0]-1):
+#     for x in range(1, src_skel.shape[1]-1):
+#         if src_skel[y][x] == 0.0:
+#             # black points
+#             black_num = getNumberOfValidPixels(src_skel, x, y)
+#
+#             # end points
+#             if black_num == 1:
+#                 print(black_num)
+#                 src_skel_rgb[y][x] = (0, 0, 255)
+#                 end_points_list.append((x, y))
+#
+# print('len of end points: %d' % len(end_points_list))
+#
+# # cross points
+# DIST_THRESHOLD = 20
+# cross_points_list = []
+# for y in range(1, src_skel.shape[0]-1):
+#     for x in range(1, src_skel.shape[1]-1):
+#         if src_skel[y][x] == 0.0:
+#             # black
+#             black_num = getNumberOfValidPixels(src_skel, x, y)
+#
+#             # normal point = 2 or not normal
+#             if black_num > 2:
+#                 for (x_, y_) in end_points_list:
+#                     dist_ = math.sqrt((x - x_) * (x - x_) + (y - y_) * (y - y_))
+#                     if dist_ > DIST_THRESHOLD:
+#                         # true cross point
+#                         print(black_num)
+#                         src_skel_rgb[y][x] = (255, 0, 0)
+#                         cross_points_list.append((x, y))
+#                         break
+#
+# for y in range(src_img.shape[0]):
+#     for x  in range(src_img.shape[1]):
+#         if src_skel[y][x] != 255:
+#             img_rgb[y][x] = (255, 0, 0)
+#
+# print('len of cross points: %d ' % len(cross_points_list))
+#
+# print(np.min(src_skel), np.max(src_skel))
+#
+# print(src_skel.shape)
+#
+# print(src_skel)
+# cv2.imshow('src', src_img)
+# cv2.imshow('skel', src_skel)
+# cv2.imshow('skel rgb', src_skel_rgb)
+# cv2.imshow('img rgb', img_rgb)
+#
+# # cv2.imshow('src', img_rgb)
+#
+# # cv2.imwrite('skele.png', src_skel)
+#
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
+
 import cv2
-import numpy as np
-from skimage.morphology import skeletonize
-from utils.Functions import getNumberOfValidPixels
 
-src_path = "../strokes/src_dan_svg_simple_resized.png"
+source_path = "../templates/templates/ben/char/ben.png"
 
-src_img = cv2.imread(src_path, 0)
-img_rgb = cv2.cvtColor(src_img, cv2.COLOR_GRAY2RGB)
+source_img = cv2.imread(source_path, 0)
+_, source_img = cv2.threshold(source_img, 127, 255, cv2.THRESH_BINARY)
 
+# target image
+target_path = "../templates/templates_comparison/ben/char/ben.png"
+target_img = cv2.imread(target_path, 0)
+_, target_img = cv2.threshold(target_img, 127, 255, cv2.THRESH_BINARY)
+print(target_img.shape)
+# resize target image
+new_tg_h = max(source_img.shape[0], target_img.shape[0])
+new_tg_w = max(source_img.shape[1], target_img.shape[1])
 
-# threshold
-_, src_img = cv2.threshold(src_img, 127, 255, cv2.THRESH_BINARY)
+target_img = cv2.resize(target_img, (new_tg_h, new_tg_w))
 
+stroke_list = []
+stroke_list.append((1477, 1571, 187, 93))
+stroke_list.append((1505, 1350, 159, 314))
+stroke_list.append((1402, 1466, 262, 198))
+stroke_list.append((1541, 1616, 123, 48))
+stroke_list.append((1622, 1405, 42, 259))
 
-src_img_ = src_img != 255
+target_img_rgb = cv2.cvtColor(target_img, cv2.COLOR_GRAY2RGB)
 
-print(src_img_)
-src_skel = skeletonize(src_img_)
-
-src_skel = (1 - src_skel) * 255
-
-src_skel = np.array(src_skel, dtype=np.uint8)
-
-src_skel_rgb = cv2.cvtColor(src_skel, cv2.COLOR_GRAY2BGR)
-
-# end points of lines
-end_points_list = []
-for y in range(1, src_skel.shape[0]-1):
-    for x in range(1, src_skel.shape[1]-1):
-        if src_skel[y][x] == 0.0:
-            # black points
-            black_num = getNumberOfValidPixels(src_skel, x, y)
-
-            # end points
-            if black_num == 1:
-                print(black_num)
-                src_skel_rgb[y][x] = (0, 0, 255)
-                end_points_list.append((x, y))
-
-print('len of end points: %d' % len(end_points_list))
-
-# cross points
-DIST_THRESHOLD = 20
-cross_points_list = []
-for y in range(1, src_skel.shape[0]-1):
-    for x in range(1, src_skel.shape[1]-1):
-        if src_skel[y][x] == 0.0:
-            # black
-            black_num = getNumberOfValidPixels(src_skel, x, y)
-
-            # normal point = 2 or not normal
-            if black_num > 2:
-                for (x_, y_) in end_points_list:
-                    dist_ = math.sqrt((x - x_) * (x - x_) + (y - y_) * (y - y_))
-                    if dist_ > DIST_THRESHOLD:
-                        # true cross point
-                        print(black_num)
-                        src_skel_rgb[y][x] = (255, 0, 0)
-                        cross_points_list.append((x, y))
-                        break
-
-print('len of cross points: %d ' % len(cross_points_list))
-
-print(np.min(src_skel), np.max(src_skel))
-
-print(src_skel.shape)
-
-print(src_skel)
-cv2.imshow('src', src_img)
-cv2.imshow('skel', src_skel)
-cv2.imshow('skel rgb', src_skel_rgb)
+for stroke in stroke_list:
+    target_img_rgb[stroke[1]: stroke[1]+stroke[3], stroke[0]: stroke[0]+stroke[2]] = (255, 0, 0)
+    break
 
 
-# cv2.imshow('src', img_rgb)
 
-# cv2.imwrite('skele.png', src_skel)
+target_img_rgb = cv2.resize(target_img_rgb, (int(target_img_rgb.shape[0]/2), int(target_img_rgb.shape[1]/2)))
+
+cv2.imshow("rgb", target_img_rgb)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()

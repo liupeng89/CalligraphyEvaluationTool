@@ -128,8 +128,8 @@ def calculateBoundingBox(image):
     if image is None:
         return None
 
-    WIDTH = image.shape[0]
-    HEIGHT = image.shape[1]
+    HEIGHT = image.shape[0]
+    WIDTH = image.shape[1]
 
     # moments
     im2, contours, hierarchy = cv2.findContours(image, 1, 2)
@@ -141,12 +141,39 @@ def calculateBoundingBox(image):
     # Bounding box
     for i in range(len(contours)):
         x, y, w, h = cv2.boundingRect(contours[i])
+
         if w > 0.95 * WIDTH and h > 0.95 * HEIGHT:
             continue
         minx = min(x, minx); miny = min(y, miny)
         maxx = max(x+w, maxx); maxy = max(y+h, maxy)
 
     return minx, miny, maxx-minx, maxy-miny
+
+
+def getBoundingBoxes(image):
+    """
+    Obtain all bounding boxes of character.
+    :param image:
+    :return:
+    """
+    boxes = []
+    if image is None:
+        return boxes
+
+    HEIGHT = image.shape[0]
+    WIDTH = image.shape[1]
+
+    # moments
+    im2, contours, hierarchy = cv2.findContours(image, 1, 2)
+    for i in range(len(contours)):
+        x, y, w, h = cv2.boundingRect(contours[i])
+
+        if w > 0.95 * WIDTH and h > 0.95 * HEIGHT:
+            continue
+        boxes.append((x, y, w, h))
+
+    return boxes
+
 
 
 # Get thr rotated minimum bounding box
@@ -254,6 +281,18 @@ def shiftImageWithMaxCR(source, target):
                                                                      tag_minx: tag_minx + tag_minw]
 
     return new_tag_rect
+
+
+def calculateCoverageRate(source, target):
+    """
+        Calculate the coverage rate of source and target images.
+    :param source:
+    :param target:
+    :return:
+    """
+    if source is None or target is None:
+        return 0.0
+
 
 
 # get Center of gravity
@@ -565,6 +604,15 @@ def getSkeletonOfImage(image, shape=cv2.MORPH_CROSS, kernel=(3, 3)):
     return skel
 
 
+def getSkeletonize(image):
+    """
+        Using the skimage.morphology.skeletonize to get the skeleton lines.
+    :param image:
+    :return:
+    """
+
+
+
 def getNumberOfValidPixels(image, x, y):
     valid_num = 0
 
@@ -627,6 +675,30 @@ def getEndPointsOfSkeletonLine(image):
     return end_points
 
 
+def getCrossAreaPointsOfSkeletionLine(image):
+    """
+        Get all cross points in the cross area.
+    :param image:
+    :return:
+    """
+    cross_points = []
+
+    if image is None:
+        return cross_points
+    # find cross points
+    for y in range(1, image.shape[0] - 1):
+        for x in range(1, image.shape[1] - 1):
+            if image[y][x] == 0.0:
+                # black points
+                black_num = getNumberOfValidPixels(image, x, y)
+
+                # cross points
+                if black_num >= 3:
+                    cross_points.append((x, y))
+    print("cross points len : %d" % len(cross_points))
+    return cross_points
+
+
 def getCrossPointsOfSkeletonLine(image):
     """
         Get the cross points of skeleton line to find the extra branch.
@@ -666,12 +738,18 @@ def getCrossPointsOfSkeletonLine(image):
             black_num += 1
 
         if black_num == 2 or black_num == 3 or black_num == 4:
+            print(black_num)
+            cross_points_no_extra.append((x, y))
+
+        if (x, y) in cross_points and (x, y-1) not in cross_points and (x+1, y-1) not in cross_points and (x+1, y) not in \
+            cross_points and (x+1, y+1) not in cross_points and (x, y+1) not in cross_points and (x-1, y+1) not in \
+            cross_points and (x-1, y) not in cross_points and (x-1, y-1) not in cross_points:
             cross_points_no_extra.append((x, y))
 
     return cross_points_no_extra
 
 
-DIST_THRESHOLD = 10
+DIST_THRESHOLD = 20
 
 
 def removeBranchOfSkeletonLine(image, end_points, cross_points):
