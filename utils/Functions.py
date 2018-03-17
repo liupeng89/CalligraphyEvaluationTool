@@ -7,6 +7,23 @@ from math import sin, cos, sqrt
 from skimage.measure import compare_ssim as ssim
 
 
+def splitConnectedComponents(image, connectivity=8):
+    image_ = 255 - image
+
+    ret, labels = cv2.connectedComponents(image_, connectivity=connectivity)
+    components = []
+    for r in range(1, ret):
+        img_ = np.ones(image_.shape, dtype=np.uint8) * 255
+        for y in range(image_.shape[0]):
+            for x in range(image_.shape[1]):
+                if labels[y][x] == r:
+                    img_[y][x] = 0.0
+        components.append(img_)
+
+    return components
+
+
+
 # Resize images of soure and target, return new square images
 # The width of new square should larger than the length of diagonal line of minimum bounding box.
 def resizeImages(source, target):
@@ -325,6 +342,9 @@ def coverageTwoImagesWithMaxSSIM(source, target):
 # Calcluate Coverage Rate
 def calculateCR(source, target):
     p_valid = np.sum(255.0 - source) / 255.0
+
+    if p_valid == 0.0:
+        return 0.0
 
     diff = target - source
 

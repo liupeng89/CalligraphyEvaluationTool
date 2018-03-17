@@ -742,45 +742,626 @@
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()
 
+# import cv2
+#
+# source_path = "../templates/templates/ben/char/ben.png"
+#
+# source_img = cv2.imread(source_path, 0)
+# _, source_img = cv2.threshold(source_img, 127, 255, cv2.THRESH_BINARY)
+#
+# # target image
+# target_path = "../templates/templates_comparison/ben/char/ben.png"
+# target_img = cv2.imread(target_path, 0)
+# _, target_img = cv2.threshold(target_img, 127, 255, cv2.THRESH_BINARY)
+# print(target_img.shape)
+# # resize target image
+# new_tg_h = max(source_img.shape[0], target_img.shape[0])
+# new_tg_w = max(source_img.shape[1], target_img.shape[1])
+#
+# target_img = cv2.resize(target_img, (new_tg_h, new_tg_w))
+#
+# stroke_list = []
+# stroke_list.append((1477, 1571, 187, 93))
+# stroke_list.append((1505, 1350, 159, 314))
+# stroke_list.append((1402, 1466, 262, 198))
+# stroke_list.append((1541, 1616, 123, 48))
+# stroke_list.append((1622, 1405, 42, 259))
+#
+# target_img_rgb = cv2.cvtColor(target_img, cv2.COLOR_GRAY2RGB)
+#
+# for stroke in stroke_list:
+#     target_img_rgb[stroke[1]: stroke[1]+stroke[3], stroke[0]: stroke[0]+stroke[2]] = (255, 0, 0)
+#     break
+#
+#
+#
+# target_img_rgb = cv2.resize(target_img_rgb, (int(target_img_rgb.shape[0]/2), int(target_img_rgb.shape[1]/2)))
+#
+# cv2.imshow("rgb", target_img_rgb)
+#
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
+
+
+# from PyQt5.QtCore import QDir, Qt
+# from PyQt5.QtGui import QImage, QPainter, QPalette, QPixmap
+# from PyQt5.QtWidgets import (QAction, QApplication, QFileDialog, QLabel,
+#         QMainWindow, QMenu, QMessageBox, QScrollArea, QSizePolicy)
+# from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
+#
+#
+# class ImageViewer(QMainWindow):
+#     def __init__(self):
+#         super(ImageViewer, self).__init__()
+#
+#         self.printer = QPrinter()
+#         self.scaleFactor = 0.0
+#
+#         self.imageLabel = QLabel()
+#         self.imageLabel.setBackgroundRole(QPalette.Base)
+#         self.imageLabel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+#         self.imageLabel.setScaledContents(True)
+#
+#         self.scrollArea = QScrollArea()
+#         self.scrollArea.setBackgroundRole(QPalette.Dark)
+#         self.scrollArea.setWidget(self.imageLabel)
+#         self.setCentralWidget(self.scrollArea)
+#
+#         self.createActions()
+#         self.createMenus()
+#
+#         self.setWindowTitle("Image Viewer")
+#         self.resize(500, 400)
+#
+#     def open(self):
+#         fileName, _ = QFileDialog.getOpenFileName(self, "Open File",
+#                 QDir.currentPath())
+#         if fileName:
+#             image = QImage(fileName)
+#             if image.isNull():
+#                 QMessageBox.information(self, "Image Viewer",
+#                         "Cannot load %s." % fileName)
+#                 return
+#
+#             self.imageLabel.setPixmap(QPixmap.fromImage(image))
+#             self.scaleFactor = 1.0
+#
+#             self.printAct.setEnabled(True)
+#             self.fitToWindowAct.setEnabled(True)
+#             self.updateActions()
+#
+#             if not self.fitToWindowAct.isChecked():
+#                 self.imageLabel.adjustSize()
+#
+#     def print_(self):
+#         dialog = QPrintDialog(self.printer, self)
+#         if dialog.exec_():
+#             painter = QPainter(self.printer)
+#             rect = painter.viewport()
+#             size = self.imageLabel.pixmap().size()
+#             size.scale(rect.size(), Qt.KeepAspectRatio)
+#             painter.setViewport(rect.x(), rect.y(), size.width(), size.height())
+#             painter.setWindow(self.imageLabel.pixmap().rect())
+#             painter.drawPixmap(0, 0, self.imageLabel.pixmap())
+#
+#     def zoomIn(self):
+#         self.scaleImage(1.25)
+#
+#     def zoomOut(self):
+#         self.scaleImage(0.8)
+#
+#     def normalSize(self):
+#         self.imageLabel.adjustSize()
+#         self.scaleFactor = 1.0
+#
+#     def fitToWindow(self):
+#         fitToWindow = self.fitToWindowAct.isChecked()
+#         self.scrollArea.setWidgetResizable(fitToWindow)
+#         if not fitToWindow:
+#             self.normalSize()
+#
+#         self.updateActions()
+#
+#     def about(self):
+#         QMessageBox.about(self, "About Image Viewer",
+#                 "<p>The <b>Image Viewer</b> example shows how to combine "
+#                 "QLabel and QScrollArea to display an image. QLabel is "
+#                 "typically used for displaying text, but it can also display "
+#                 "an image. QScrollArea provides a scrolling view around "
+#                 "another widget. If the child widget exceeds the size of the "
+#                 "frame, QScrollArea automatically provides scroll bars.</p>"
+#                 "<p>The example demonstrates how QLabel's ability to scale "
+#                 "its contents (QLabel.scaledContents), and QScrollArea's "
+#                 "ability to automatically resize its contents "
+#                 "(QScrollArea.widgetResizable), can be used to implement "
+#                 "zooming and scaling features.</p>"
+#                 "<p>In addition the example shows how to use QPainter to "
+#                 "print an image.</p>")
+#
+#     def createActions(self):
+#         self.openAct = QAction("&Open...", self, shortcut="Ctrl+O",
+#                 triggered=self.open)
+#
+#         self.printAct = QAction("&Print...", self, shortcut="Ctrl+P",
+#                 enabled=False, triggered=self.print_)
+#
+#         self.exitAct = QAction("E&xit", self, shortcut="Ctrl+Q",
+#                 triggered=self.close)
+#
+#         self.zoomInAct = QAction("Zoom &In (25%)", self, shortcut="Ctrl++",
+#                 enabled=False, triggered=self.zoomIn)
+#
+#         self.zoomOutAct = QAction("Zoom &Out (25%)", self, shortcut="Ctrl+-",
+#                 enabled=False, triggered=self.zoomOut)
+#
+#         self.normalSizeAct = QAction("&Normal Size", self, shortcut="Ctrl+S",
+#                 enabled=False, triggered=self.normalSize)
+#
+#         self.fitToWindowAct = QAction("&Fit to Window", self, enabled=False,
+#                 checkable=True, shortcut="Ctrl+F", triggered=self.fitToWindow)
+#
+#         self.aboutAct = QAction("&About", self, triggered=self.about)
+#
+#         self.aboutQtAct = QAction("About &Qt", self,
+#                 triggered=QApplication.instance().aboutQt)
+#
+#     def createMenus(self):
+#         self.fileMenu = QMenu("&File", self)
+#         self.fileMenu.addAction(self.openAct)
+#         self.fileMenu.addAction(self.printAct)
+#         self.fileMenu.addSeparator()
+#         self.fileMenu.addAction(self.exitAct)
+#
+#         self.viewMenu = QMenu("&View", self)
+#         self.viewMenu.addAction(self.zoomInAct)
+#         self.viewMenu.addAction(self.zoomOutAct)
+#         self.viewMenu.addAction(self.normalSizeAct)
+#         self.viewMenu.addSeparator()
+#         self.viewMenu.addAction(self.fitToWindowAct)
+#
+#         self.helpMenu = QMenu("&Help", self)
+#         self.helpMenu.addAction(self.aboutAct)
+#         self.helpMenu.addAction(self.aboutQtAct)
+#
+#         self.menuBar().addMenu(self.fileMenu)
+#         self.menuBar().addMenu(self.viewMenu)
+#         self.menuBar().addMenu(self.helpMenu)
+#         self.menuBar().setNativeMenuBar(False)
+#
+#     def updateActions(self):
+#         self.zoomInAct.setEnabled(not self.fitToWindowAct.isChecked())
+#         self.zoomOutAct.setEnabled(not self.fitToWindowAct.isChecked())
+#         self.normalSizeAct.setEnabled(not self.fitToWindowAct.isChecked())
+#
+#     def scaleImage(self, factor):
+#         self.scaleFactor *= factor
+#         self.imageLabel.resize(self.scaleFactor * self.imageLabel.pixmap().size())
+#
+#         self.adjustScrollBar(self.scrollArea.horizontalScrollBar(), factor)
+#         self.adjustScrollBar(self.scrollArea.verticalScrollBar(), factor)
+#
+#         self.zoomInAct.setEnabled(self.scaleFactor < 3.0)
+#         self.zoomOutAct.setEnabled(self.scaleFactor > 0.333)
+#
+#     def adjustScrollBar(self, scrollBar, factor):
+#         scrollBar.setValue(int(factor * scrollBar.value()
+#                                 + ((factor - 1) * scrollBar.pageStep()/2)))
+#
+#
+# if __name__ == '__main__':
+#
+#     import sys
+#
+#     app = QApplication(sys.argv)
+#     imageViewer = ImageViewer()
+#     imageViewer.show()
+#     sys.exit(app.exec_())
+
+
+# import random, sys
+# from PyQt5.QtCore import QPoint, QRect, QSize, Qt
+# from PyQt5.QtGui import *
+#
+#
+# class Window(QLabel):
+#
+#     def __init__(self, parent=None):
+#
+#         QLabel.__init__(self, parent)
+#         self.rubberBand = QRubberBand(QRubberBand.Rectangle, self)
+#         self.origin = QPoint()
+#
+#     def mousePressEvent(self, event):
+#
+#         if event.button() == Qt.LeftButton:
+#             self.origin = QPoint(event.pos())
+#             self.rubberBand.setGeometry(QRect(self.origin, QSize()))
+#             self.rubberBand.show()
+#
+#     def mouseMoveEvent(self, event):
+#
+#         if not self.origin.isNull():
+#             self.rubberBand.setGeometry(QRect(self.origin, event.pos()).normalized())
+#
+#     def mouseReleaseEvent(self, event):
+#
+#         if event.button() == Qt.LeftButton:
+#             self.rubberBand.hide()
+#
+#     def create_pixmap():
+#
+#         def color():
+#             r = random.randrange(0, 255)
+#             g = random.randrange(0, 255)
+#             b = random.randrange(0, 255)
+#             return QColor(r, g, b)
+#
+#         def point():
+#             return QPoint(random.randrange(0, 400), random.randrange(0, 300))
+#
+#         pixmap = QPixmap(400, 300)
+#         pixmap.fill(color())
+#         painter = QPainter()
+#         painter.begin(pixmap)
+#         i = 0
+#         while i < 1000:
+#             painter.setBrush(color())
+#             painter.drawPolygon(QPolygon([point(), point(), point()]))
+#             i += 1
+#
+#         painter.end()
+#         return pixmap
+#
+#
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)
+#     random.seed()
+#
+#     window = Window()
+#     window.setPixmap(create_pixmap())
+#     window.resize(400, 300)
+#     window.show()
+#
+#     sys.exit(app.exec_())
+
+# import sys
+# from PyQt5.QtWidgets import QApplication, QWidget
+# from PyQt5.QtGui import QPainter, QPixmap
+# from PyQt5.QtCore import Qt, QPoint
+#
+#
+# class Winform(QWidget):
+#     def __init__(self, parent=None):
+#         super(Winform, self).__init__(parent)
+#         self.setWindowTitle("双缓冲绘图例子")
+#         self.pix = QPixmap()
+#         self.lastPoint = QPoint()
+#         self.endPoint = QPoint()
+#         # 辅助画布
+#         self.tempPix = QPixmap()
+#         # 标志是否正在绘图
+#         self.isDrawing = False
+#         self.initUi()
+#
+#     def initUi(self):
+#         # 窗口大小设置为600*500
+#         self.resize(600, 500);
+#         # 画布大小为400*400，背景为白色
+#         self.pix = QPixmap(400, 400);
+#         self.pix.fill(Qt.white);
+#
+#     def paintEvent(self, event):
+#         painter = QPainter(self)
+#         x = self.lastPoint.x()
+#         y = self.lastPoint.y()
+#         w = self.endPoint.x() - x
+#         h = self.endPoint.y() - y
+#
+#         # 如果正在绘图，就在辅助画布上绘制
+#         if self.isDrawing:
+#             # 将以前pix中的内容复制到tempPix中，保证以前的内容不消失
+#             self.tempPix = self.pix
+#             pp = QPainter(self.tempPix)
+#             pp.drawRect(x, y, w, h)
+#             painter.drawPixmap(0, 0, self.tempPix)
+#         else:
+#             pp = QPainter(self.pix)
+#             pp.drawRect(x, y, w, h)
+#             painter.drawPixmap(0, 0, self.pix)
+#
+#     def mousePressEvent(self, event):
+#         # 鼠标左键按下
+#         if event.button() == Qt.LeftButton:
+#             self.lastPoint = event.pos()
+#             self.endPoint = self.lastPoint
+#             self.isDrawing = True
+#
+#     def mouseReleaseEvent(self, event):
+#         # 鼠标左键释放
+#         if event.button() == Qt.LeftButton:
+#             self.endPoint = event.pos()
+#             # 进行重新绘制
+#             self.update()
+#             self.isDrawing = False
+#
+#
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)
+#     form = Winform()
+#     form.show()
+#     sys.exit(app.exec_())
+
+# import sys, math
+# from PyQt5 import QtCore, QtGui, QtWidgets
+#
+# class MyWidget(QtWidgets.QWidget):
+#     def __init__(self, parent=None):
+#         QtWidgets.QWidget.__init__(self, parent)
+#         self.pen = QtGui.QPen(QtGui.QColor(0,0,0))                      # set lineColor
+#         self.pen.setWidth(3)                                            # set lineWidth
+#         self.brush = QtGui.QBrush(QtGui.QColor(255,255,255,255))        # set fillColor
+#         self.polygon = self.createPoly(8,150,0)                         # polygon with n points, radius, angle of the first point
+#
+#         self.lastPoint = QtCore.QPoint()
+#         self.endPoint = QtCore.QPoint()
+#
+#     def createPoly(self, n, r, s):
+#         polygon = QtGui.QPolygonF()
+#         w = 360/n                                                       # angle per step
+#         for i in range(n):                                              # add the points of polygon
+#             t = w*i + s
+#             x = r*math.cos(math.radians(t))
+#             y = r*math.sin(math.radians(t))
+#             polygon.append(QtCore.QPointF(self.width()/2 +x, self.height()/2 + y))
+#
+#         return polygon
+#
+#     def paintEvent(self, event):
+#         painter = QtGui.QPainter(self)
+#         painter.setPen(self.pen)
+#         painter.setBrush(self.brush)
+#         painter.drawPolygon(self.polygon)
+#
+# app = QtWidgets.QApplication(sys.argv)
+#
+# widget = MyWidget()
+# widget.show()
+#
+# sys.exit(app.exec_())
+
+# import sys
+# from PyQt5.QtWidgets import *
+# from PyQt5.QtGui import *
+# from PyQt5.QtCore import *
+#
+# class Example(QWidget):
+#     def __init__(self):
+#         super().__init__()
+#         self.setGeometry(30, 30, 500, 300)
+#
+#     def paintEvent(self, event):
+#         painter = QPainter(self)
+#         pixmap = QPixmap("ben.png")
+#         painter.drawPixmap(self.rect(), pixmap)
+#         pen = QPen(Qt.red, 3)
+#         painter.setPen(pen)
+#         painter.drawLine(10, 10, self.rect().width() -10 , 10)
+#
+# if __name__ == '__main__':
+#     app = QApplication(sys.argv)
+#     ex = Example()
+#     ex.show()
+#     sys.exit(app.exec_())
+
+# import sys
+# from PyQt5.QtWidgets import QApplication, QLabel, QWidget
+# from PyQt5.QtGui import QPainter
+# from PyQt5.QtCore import Qt
+#
+# class MouseTracker(QWidget):
+#     distance_from_center = 0
+#     def __init__(self):
+#         super().__init__()
+#         self.initUI()
+#         self.setMouseTracking(True)
+#         self.x = -1
+#         self.y = -1
+#
+#     def initUI(self):
+#         self.setGeometry(200, 200, 1000, 500)
+#         self.setWindowTitle('Mouse Tracker')
+#         self.label = QLabel(self)
+#         self.label.resize(500, 40)
+#         self.show()
+#
+#     def paintEvent(self, e):
+#
+#         if not (self.x == -1 or self.y == -1):
+#             q = QPainter()  #Painting the line
+#
+#             q.begin(self)
+#
+#             q.drawLine(self.x, self.y, 250, 500)
+#             q.end()
+#
+#     def mouseMoveEvent(self, event):
+#         distance_from_center = round(((event.y() - 250)**2 + (event.x() - 500)**2)**0.5)
+#         self.label.setText('Coordinates: ( %d : %d )' % (event.x(), event.y()) + "Distance from center: " + str(distance_from_center))
+#
+#         self.x = event.x()
+#         self.y = event.y()
+#
+#         self.update()
+#
+#     def drawPoints(self, qp, x, y):
+#         qp.setPen(Qt.red)
+#         qp.drawPoint(x, y)
+#
+# app = QApplication(sys.argv)
+# ex = MouseTracker()
+# sys.exit(app.exec_())
+
+
 import cv2
 
-source_path = "../templates/templates/ben/char/ben.png"
+def main():
+    path = "ben.png"
 
-source_img = cv2.imread(source_path, 0)
-_, source_img = cv2.threshold(source_img, 127, 255, cv2.THRESH_BINARY)
+    img = cv2.imread(path, 0)
+    _, img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
 
-# target image
-target_path = "../templates/templates_comparison/ben/char/ben.png"
-target_img = cv2.imread(target_path, 0)
-_, target_img = cv2.threshold(target_img, 127, 255, cv2.THRESH_BINARY)
-print(target_img.shape)
-# resize target image
-new_tg_h = max(source_img.shape[0], target_img.shape[0])
-new_tg_w = max(source_img.shape[1], target_img.shape[1])
+    img_rbg = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 
-target_img = cv2.resize(target_img, (new_tg_h, new_tg_w))
+    points = []
+    points.append((296, 119))
+    points.append((284, 57))
+    points.append((289, 11))
+    points.append((388, 8))
+    points.append((410, 32))
+    points.append((404, 61))
+    points.append((389, 89))
+    points.append((386, 110))
+    points.append((371, 138))
+    points.append((371, 151))
+    points.append((370, 164))
+    points.append((369, 176))
+    points.append((366, 191))
+    points.append((362, 204))
+    points.append((358, 218))
+    points.append((355, 230))
+    points.append((352, 243))
+    points.append((352, 257))
+    points.append((351, 268))
+    points.append((349, 278))
+    points.append((347, 286))
+    points.append((334, 325))
+    points.append((314, 364))
+    points.append((288, 413))
+    points.append((255, 466))
+    points.append((227, 506))
+    points.append((179, 555))
+    points.append((133, 599))
+    points.append((69, 638))
+    points.append((34, 638))
+    points.append((25, 609))
+    points.append((35, 576))
+    points.append((83, 537))
+    points.append((185, 404))
+    points.append((224, 350))
+    points.append((253, 309))
+    points.append((271, 283))
+    points.append((294, 255))
+    points.append((300, 236))
+    points.append((307, 215))
+    points.append((315, 196))
+    points.append((323, 170))
+    points.append((325, 151))
+    points.append((312, 122))
+    points.append((296, 90))
+    points.append((277, 47))
+    points.append((291, 17))
+    points.append((296, 119))
+    # points.append((220, 525))
+    # points.append((356, 500))
+    # points.append((418, 488))
+    # points.append((492, 466))
+    # points.append((524, 496))
+    # points.append((508, 530))
+    # points.append((425, 541))
+    # points.append((406, 538))
+    # points.append((351, 561))
+    # points.append((308, 583))
+    # points.append((239, 585))
+    # points.append((207, 553))
+    # points.append((205, 533))
+    # points.append((226, 516))
+    # points.append((220, 525))
 
-stroke_list = []
-stroke_list.append((1477, 1571, 187, 93))
-stroke_list.append((1505, 1350, 159, 314))
-stroke_list.append((1402, 1466, 262, 198))
-stroke_list.append((1541, 1616, 123, 48))
-stroke_list.append((1622, 1405, 42, 259))
+    for i in range(len(points)-1):
+        start = points[i]
+        end = points[i+1]
+        img_rbg = cv2.line(img_rbg, start, end, (0,255,0), 2)
 
-target_img_rgb = cv2.cvtColor(target_img, cv2.COLOR_GRAY2RGB)
-
-for stroke in stroke_list:
-    target_img_rgb[stroke[1]: stroke[1]+stroke[3], stroke[0]: stroke[0]+stroke[2]] = (255, 0, 0)
-    break
+    stroke = extractStorkeByPolygon(img, points)
 
 
+    cv2.imshow("stroke", stroke)
 
-target_img_rgb = cv2.resize(target_img_rgb, (int(target_img_rgb.shape[0]/2), int(target_img_rgb.shape[1]/2)))
+    cv2.imshow("rgb", img_rbg)
 
-cv2.imshow("rgb", target_img_rgb)
-
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 
+def checkInPolygon(x, y, points):
+    if points is None:
+        return False
+
+    cross_num = 0
+    for i in range(len(points)-1):
+        start = points[i]
+        end = points[i+1]
+        max_y = max(start[1], end[1])
+        min_y = min(start[1], end[1])
+
+        if y >= min_y and y <= max_y:
+            cross_num += 1
+
+    if cross_num % 2 == 0:
+        # even cross points, not in polygon
+        return False
+    else:
+        return True
+
+
+def extractStorkeByPolygon(image, polygon):
+
+    image_ = image.copy()
+
+    for y in range(image.shape[0]):
+        for x in range(image.shape[1]):
+            if not ray_tracing_method(x, y, polygon):
+                image_[y][x] = 255
+
+    return image_
+
+
+
+# Ray tracing check point in polygon
+def ray_tracing_method(x,y,poly):
+
+    n = len(poly)
+    inside = False
+
+    p1x,p1y = poly[0]
+    for i in range(n+1):
+        p2x,p2y = poly[i % n]
+        if y > min(p1y,p2y):
+            if y <= max(p1y,p2y):
+                if x <= max(p1x,p2x):
+                    if p1y != p2y:
+                        xints = (y-p1y)*(p2x-p1x)/(p2y-p1y)+p1x
+                    if p1x == p2x or x <= xints:
+                        inside = not inside
+        p1x,p1y = p2x,p2y
+
+    return inside
+
+
+if __name__ == '__main__':
+    main()
+    # points = []
+    # points.append((0,2))
+    # points.append((2,2))
+    # points.append((2,0))
+    # points.append((0,0))
+    #
+    # print(checkInPolygon(1, 1, points))
+    # print(checkInPolygon(0, 1, points))
+    # print(checkInPolygon(1, 0, points))
+    # print(checkInPolygon(3, 1, points))
+    #
+    # print(ray_tracing_method(1, 1, points))
+    # print(ray_tracing_method(0, 1, points))
+    # print(ray_tracing_method(1, 0, points))
+    # print(ray_tracing_method(3, 1, points))
