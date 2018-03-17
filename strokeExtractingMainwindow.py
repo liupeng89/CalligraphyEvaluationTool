@@ -8,6 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -22,13 +23,19 @@ class Ui_MainWindow(object):
         self.verticalLayout.setObjectName("verticalLayout")
         self.open_btn = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.open_btn.setObjectName("open_btn")
+        self.open_btn.clicked.connect(self.openBtn)
         self.verticalLayout.addWidget(self.open_btn)
+
         self.extract_btn = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.extract_btn.setObjectName("extract_btn")
+        self.extract_btn.clicked.connect(self.extractBtn)
         self.verticalLayout.addWidget(self.extract_btn)
+
         self.exit_btn = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.exit_btn.setObjectName("exit_btn")
+        self.exit_btn.clicked.connect(self.exitBtn)
         self.verticalLayout.addWidget(self.exit_btn)
+
         self.image_view = QtWidgets.QGraphicsView(self.centralwidget)
         self.image_view.setGeometry(QtCore.QRect(200, 10, 1061, 591))
         self.image_view.setObjectName("image_view")
@@ -51,3 +58,22 @@ class Ui_MainWindow(object):
         self.extract_btn.setText(_translate("MainWindow", "Extracting"))
         self.exit_btn.setText(_translate("MainWindow", "Exit"))
 
+    def openBtn(self):
+        print("Open button clicked!")
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(None, "Open file", QtCore.QDir.currentPath())
+        if filename:
+            image = QtGui.QImage(filename)
+
+            if image.isNull():
+                QtWidgets.QMessageBox.information(self, "Image viewer", "Cannot load %s." % filename)
+                return
+            print(filename)
+
+            self.imagePix = QtGui.QPixmap.fromImage(image)
+            
+
+    def extractBtn(self):
+        print("Extract button clicked")
+
+    def exitBtn(self):
+        print("Exit button clicked")
