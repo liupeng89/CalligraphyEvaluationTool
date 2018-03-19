@@ -71,7 +71,6 @@ class Ui_MainWindow(QWidget):
 
         self.image_gray = None
 
-
     def retranslateUi(self, MainWindow):
         _translate = QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
@@ -99,7 +98,6 @@ class Ui_MainWindow(QWidget):
             self.temp_image_pix = self.image_pix.copy()
             self.scene.addPixmap(self.image_pix)
             self.scene.update()
-            
 
     def extractBtn(self):
         print("Extract button clicked")
@@ -113,10 +111,7 @@ class Ui_MainWindow(QWidget):
             stroke = extractStorkeByPolygon(self.image_gray, self.scene.points)
             cv2.imwrite("stroke.png", stroke)
 
-
         print("number of points: %d" % len(self.scene.points))
-
-
 
     def clearBtn(self):
         print("Clear !")
@@ -132,7 +127,6 @@ class Ui_MainWindow(QWidget):
         self.scene.update()
 
 
-
 class GraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
         QGraphicsScene.__init__(self, parent)
@@ -141,6 +135,8 @@ class GraphicsScene(QGraphicsScene):
         self.endPoint = QPoint()
 
         self.points = []
+        self.strokes = []
+        self.T_DISTANCE = 10
 
     def setOption(self, opt):
         self.opt = opt
@@ -152,9 +148,25 @@ class GraphicsScene(QGraphicsScene):
         x = event.scenePos().x()
         y = event.scenePos().y()
 
-        self.addEllipse(x, y, 4, 4, pen, brush)
-        self.endPoint = event.scenePos()
+        if len(self.points) == 0:
+            self.addEllipse(x, y, 4, 4, pen, brush)
+            self.endPoint = event.scenePos()
+        else:
+            x0 = self.points[0][0]
+            y0 = self.points[0][1]
+
+            dist = math.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
+            if dist < self.T_DISTANCE:
+                pen_ = QPen(Qt.green)
+                brush_ = QBrush(Qt.green)
+                self.addEllipse(x0, y0, 4, 4, pen_, brush_)
+                self.endPoint = event.scenePos()
+                x = x0; y = y0
+            else:
+                self.addEllipse(x, y, 4, 4, pen, brush)
+                self.endPoint = event.scenePos()
         self.points.append((x, y))
+
 
     def mouseReleaseEvent(self, event):
         pen = QPen(Qt.red)
