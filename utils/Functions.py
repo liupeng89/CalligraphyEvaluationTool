@@ -8,6 +8,12 @@ from skimage.measure import compare_ssim as ssim
 
 
 def splitConnectedComponents(image, connectivity=8):
+    """
+        Split connected components from image.
+    :param image:
+    :param connectivity:
+    :return:
+    """
     image_ = 255 - image
 
     ret, labels = cv2.connectedComponents(image_, connectivity=connectivity)
@@ -207,24 +213,24 @@ def getRotatedMinimumBoundingBox(image):
 
 
 # get all bounding boxes from image
-def getBoundingBoxes(image):
-    if image is None:
-        return None
-    # moments
-    im2, contours, _ = cv2.findContours(image, 1, 2)
-
-    result = []
-    for i in range(len(contours)):
-        item = []
-        x, y, w, h = cv2.boundingRect(contours[i])
-        item.append(x)
-        item.append(y)
-        item.append(w+2)
-        item.append(h+2)
-
-        result.append(item)
-
-    return result
+# def getBoundingBoxes(image):
+#     if image is None:
+#         return None
+#     # moments
+#     im2, contours, _ = cv2.findContours(image, 1, 2)
+#
+#     result = []
+#     for i in range(len(contours)):
+#         item = []
+#         x, y, w, h = cv2.boundingRect(contours[i])
+#         item.append(x)
+#         item.append(y)
+#         item.append(w+2)
+#         item.append(h+2)
+#
+#         result.append(item)
+#
+#     return result
 
 
 
@@ -865,4 +871,120 @@ def getPointsOfExtraBranchOfSkeletonLine(image, start_x, start_y, end_x, end_y):
             start_point = next_point
 
     return extra_branch_points
+
+
+# Order points with clockwise oriented
+def order_points(image, isClockwise=True):
+    """
+        Order points on contour with clockwise direction or counter-clockwise direction
+    :param image:
+    :param isClockwise:
+    :return:
+    """
+    if image is None:
+        return
+    contour_points = []
+    # find the begin point
+    start_point = None
+    for y in range(image.shape[0]):
+        for x in range(image.shape[1]):
+            if image[y][x] == 0.0:
+                # first black point is the start point
+                start_point = (x, y)
+                break
+        if start_point:
+            break
+
+    print("begin point: " + str(start_point))
+
+    # find second points with different direction of clockwise and counter-clockwise
+    second_point = None
+    # clockwise direction
+    if image[y][x + 1] == 0.0:
+        # P4 position
+        second_point = (x + 1, y)
+    elif image[y + 1][x + 1] == 0.0:
+        # P5 positon
+        second_point = (x + 1, y + 1)
+
+    # contour points
+    contour_points.append(start_point)
+    contour_points.append(second_point)
+
+    # contour point lables
+    contour_order_lables = np.zeros_like(image)
+    contour_order_lables[start_point[1]][start_point[0]] = 1.
+    contour_order_lables[second_point[1]][second_point[0]] = 1.
+
+    next_point = second_point
+    current_point = second_point
+    while True:
+        x = current_point[0]; y = current_point[1]
+
+        # 2,4,6,8 position firstly and then 3,5,7,9 position
+        # point in 2 position
+        if image[y - 1][x] == 0.0 and contour_order_lables[y - 1][x] == 0.0:
+            next_point = (x, y - 1)
+            contour_order_lables[y - 1][x] = 1.
+
+        # point in 4 position
+        elif image[y][x + 1] == 0.0 and contour_order_lables[y][x + 1] == 0.0:
+            next_point = (x + 1, y)
+            contour_order_lables[y][x + 1] = 1.
+
+        # point in 6 position
+        elif image[y + 1][x] == 0.0 and contour_order_lables[y + 1][x] == 0.0:
+            next_point = (x, y + 1)
+            contour_order_lables[y + 1][x] = 1.
+
+        # point in 8 position
+        elif image[y][x - 1] == 0.0 and contour_order_lables[y][x - 1] == 0.0:
+            next_point = (x - 1, y)
+            contour_order_lables[y][x - 1] = 1.
+
+        # point in 3 position
+        elif image[y - 1][x + 1] == 0.0 and contour_order_lables[y - 1][x + 1] == 0.0:
+            next_point = (x + 1, y - 1)
+            contour_order_lables[y - 1][x + 1] = 1.
+
+        # point in 5 position
+        elif image[y + 1][x + 1] == 0.0 and contour_order_lables[y + 1][x + 1] == 0.0:
+            next_point = (x + 1, y + 1)
+            contour_order_lables[y + 1][x + 1] = 1.
+
+        # point in 7 position
+        elif image[y + 1][x - 1] == 0.0 and contour_order_lables[y + 1][x - 1] == 0.0:
+            next_point = (x - 1, y + 1)
+            contour_order_lables[y + 1][x - 1] = 1.
+
+        # point in 9 position
+        elif image[y - 1][x - 1] == 0.0 and contour_order_lables[y - 1][x - 1] == 0.0:
+            next_point = (x - 1, y - 1)
+            contour_order_lables[y - 1][x - 1] = 1.
+
+        if next_point == current_point:
+            contour_points.append(current_point)
+            break
+        else:
+            contour_points.append(current_point)
+            current_point = next_point
+
+    if isClockwise:
+        return contour_points
+    else:
+        contour_points.reverse()
+        return contour_points
+
+
+def radicalsExtract(image):
+    """
+        Radicals extracting from characters.
+    :param image:
+    :return:
+    """
+    if image is None:
+        return
+
+    #
+
 
