@@ -148,8 +148,13 @@ radicals = splitConnectedComponents(img)
 print("number of radicals: %d" % len(radicals))
 
 for id, ra in enumerate(radicals):
+    print(ra.shape)
     cv2.imshow("id_"+str(id), ra)
 
+img = cv2.resize(img, (int(img.shape[0]/2.), int(img.shape[1]/2.)))
+img_rgb = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+
+cv2.imwrite("quan1.png", img_rgb)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()

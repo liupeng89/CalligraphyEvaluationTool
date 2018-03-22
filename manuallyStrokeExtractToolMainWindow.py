@@ -44,6 +44,10 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         self.radicalExtract_btn.clicked.connect(self.radicalsExtractBtn)
 
     def openBtn(self):
+        """
+            Open button clicked function.
+        :return:
+        """
         print("Open button clicked!")
         self.scene.clear()
         filename, _ = QFileDialog.getOpenFileName(None, "Open file", QDir.currentPath())
@@ -52,56 +56,68 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
             # image file path
             self.image_path = filename
 
-            image = QImage(filename)
-            if image.isNull():
+            qimage = QImage(filename)
+            if qimage.isNull():
                 QMessageBox.information(self, "Image viewer", "Cannot load %s." % filename)
                 return
-            print(filename)
 
             # grayscale image
             img_ = cv2.imread(filename, 0)
             _, img_ = cv2.threshold(img_, 127, 255, cv2.THRESH_BINARY)
             self.image_gray = img_.copy()
 
-            self.image_pix = QPixmap.fromImage(image)
+            self.image_pix = QPixmap.fromImage(qimage)
             self.temp_image_pix = self.image_pix.copy()
             self.scene.addPixmap(self.image_pix)
             self.scene.update()
 
     def radicalsExtractBtn(self):
+        """
+            Radical extract button clicked function.
+        :return:
+        """
         print("Radicals extract btn clicked!")
         if self.image_gray is None:
             QMessageBox.information(self, "Grayscale image is None!")
             return
-        img_ = self.image_gray.copy()
 
         # get all radicals of character
-        radicals = splitConnectedComponents(img_)
+        radicals = splitConnectedComponents(self.image_gray)
 
         print("number of radicals: %d" % len(radicals))
 
         self.radicals = radicals
-        radicals_name = []
+        self.radicals_name = []
         for i in range(len(radicals)):
-            radicals_name.append("radical_" + str(i+1))
-        self.radical_slm.setStringList(radicals_name)
-        self.radicals_name = radicals_name
+            self.radicals_name.append("radical_" + str(i+1))
+        self.radical_slm.setStringList(self.radicals_name)
 
     def radicalsListView_clicked(self, qModelIndex):
+        """
+            Radical list view item clicked function.
+        :param qModelIndex:
+        :return:
+        """
         print("radical list %s th clicked!" % str(qModelIndex.row()))
 
         # numpy.narray to QImage and QPixmap
         img_ = self.radicals[qModelIndex.row()]
 
-        qimg = QImage(img_.data, img_.shape[1], img_.shape[0], QImage.Format_Grayscale8)
+        if img_ is None:
+            return
+
+        qimg = QImage(img_.data, img_.shape[1], img_.shape[0], QImage.Format_Indexed8)
 
         self.image_pix = QPixmap.fromImage(qimg)
         self.temp_image_pix = self.image_pix.copy()
         self.scene.addPixmap(self.image_pix)
         self.scene.update()
 
-
     def extractBtn(self):
+        """
+            Extracting button clicked function.
+        :return:
+        """
         print("Extract button clicked")
         if self.image_gray is None:
             QMessageBox.information(self, "Grayscale image is None!")
@@ -120,6 +136,10 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         cv2.imwrite(fileName, saved_img)
 
     def clearBtn(self):
+        """
+            Clear button clicked function.
+        :return:
+        """
         print("Clear !")
 
         # remove existing points
@@ -133,6 +153,10 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         self.scene.update()
 
     def exitBtn(self):
+        """
+            Exiting button clicked function.
+        :return:
+        """
         qApp = QApplication.instance()
         sys.exit(qApp.exec_())
 
@@ -159,7 +183,7 @@ class GraphicsScene(QGraphicsScene):
         y = event.scenePos().y()
 
         if len(self.points) == 0:
-            self.addEllipse(x, y, 4, 4, pen, brush)
+            self.addEllipse(x, y, 2, 2, pen, brush)
             self.endPoint = event.scenePos()
         else:
             x0 = self.points[0][0]
@@ -169,7 +193,7 @@ class GraphicsScene(QGraphicsScene):
             if dist < self.T_DISTANCE:
                 pen_ = QPen(Qt.green)
                 brush_ = QBrush(Qt.green)
-                self.addEllipse(x0, y0, 4, 4, pen_, brush_)
+                self.addEllipse(x0, y0, 2, 2, pen_, brush_)
                 self.endPoint = event.scenePos()
                 x = x0; y = y0
             else:
