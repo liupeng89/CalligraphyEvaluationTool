@@ -107,7 +107,7 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
             return
         img_ = np.array(img_, dtype=np.uint8)
         print(img_.shape)
-        qimg = QImage(img_.data, img_.shape[1], img_.shape[0], QImage.Format_Indexed8)
+        qimg = QImage(img_.data, img_.shape[1], img_.shape[0], img_.shape[1], QImage.Format_Indexed8)
 
         self.image_pix = QPixmap.fromImage(qimg)
         self.temp_image_pix = self.image_pix.copy()
