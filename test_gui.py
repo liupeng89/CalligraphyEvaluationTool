@@ -137,7 +137,7 @@
 import cv2
 from utils.Functions import splitConnectedComponents
 
-path = "quan.png"
+path = "quan1.png"
 
 img = cv2.imread(path, 0)
 

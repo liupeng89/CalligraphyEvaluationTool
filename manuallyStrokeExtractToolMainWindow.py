@@ -80,13 +80,13 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         if self.image_gray is None:
             QMessageBox.information(self, "Grayscale image is None!")
             return
-
+        self.radicals = None
         # get all radicals of character
         radicals = splitConnectedComponents(self.image_gray)
 
         print("number of radicals: %d" % len(radicals))
 
-        self.radicals = radicals
+        self.radicals = radicals.copy()
         self.radicals_name = []
         for i in range(len(radicals)):
             self.radicals_name.append("radical_" + str(i+1))
@@ -105,7 +105,8 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
 
         if img_ is None:
             return
-
+        img_ = np.array(img_, dtype=np.uint8)
+        print(img_.shape)
         qimg = QImage(img_.data, img_.shape[1], img_.shape[0], QImage.Format_Indexed8)
 
         self.image_pix = QPixmap.fromImage(qimg)
