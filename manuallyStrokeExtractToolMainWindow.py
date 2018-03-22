@@ -25,16 +25,25 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         self.endPoint = QPoint()
 
         self.image_gray = None
+        self.radical_gray = None
         self.image_path = ""
 
         # radicals
         self.radicals = []
         self.radicals_name = []
 
+        self.strokes_name = []
+
         self.radical_slm = QStringListModel()
         self.radical_slm.setStringList(self.radicals_name)
         self.radical_listview.setModel(self.radical_slm)
         self.radical_listview.clicked.connect(self.radicalsListView_clicked)
+
+        # strokes
+        self.stroke_slm = QStringListModel()
+        self.stroke_slm.setStringList(self.strokes_name)
+        self.stroke_listview.setModel(self.stroke_slm)
+
 
         # add listener
         self.open_btn.clicked.connect(self.openBtn)
@@ -42,6 +51,7 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         self.clear_btn.clicked.connect(self.clearBtn)
         self.exit_btn.clicked.connect(self.exitBtn)
         self.radicalExtract_btn.clicked.connect(self.radicalsExtractBtn)
+        self.add_btn.clicked.connect(self.addBtn)
 
     def openBtn(self):
         """
@@ -106,13 +116,53 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         if img_ is None:
             return
         img_ = np.array(img_, dtype=np.uint8)
-        print(img_.shape)
+        self.radical_gray = img_.copy()
+
+        # clean stroke name list
+        self.strokes_name = []
+
         qimg = QImage(img_.data, img_.shape[1], img_.shape[0], img_.shape[1], QImage.Format_Indexed8)
 
         self.image_pix = QPixmap.fromImage(qimg)
         self.temp_image_pix = self.image_pix.copy()
         self.scene.addPixmap(self.image_pix)
         self.scene.update()
+
+    def addBtn(self):
+        """
+            Select stroke from image, and add to strokes list.
+        :return:
+        """
+        if self.radical_gray is None:
+            QMessageBox.information(self, "Radicals are None!")
+            return
+
+        if self.scene.points is None or len(self.scene.points) == 0:
+            saved_img = self.radical_gray.copy()
+        else:
+            saved_img = extractStorkeByPolygon(self.radical_gray, self.scene.points)
+
+        # add strokes name to storke name list
+        if self.strokes_name is None or len(self.strokes_name) == 0:
+            # first storke
+            self.strokes_name.append("stroke_1")
+        else:
+            # exist other strokes
+            len_ = len(self.strokes_name)
+            stroke_name = str(len_ + 1)
+            self.strokes_name.append("stroke_"+stroke_name)
+
+        self.stroke_slm.setStringList(self.strokes_name)
+
+        # clean the select points
+        self.scene.points = []
+        self.scene.lastPoint = QPoint()
+        self.scene.endPoint = QPoint()
+
+
+
+
+
 
     def extractBtn(self):
         """

@@ -90,9 +90,23 @@
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_3">
      <item>
+      <widget class="QPushButton" name="auto_extract_btn">
+       <property name="text">
+        <string>Auto-extracting</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="extract_btn">
        <property name="text">
         <string>Extracting</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="add_btn">
+       <property name="text">
+        <string>Add</string>
        </property>
       </widget>
      </item>

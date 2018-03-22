@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'strokeExtractingMainwindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.9.2
+# Created by: PyQt5 UI code generator 5.10.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -50,9 +50,15 @@ class Ui_MainWindow(object):
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_3)
         self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.auto_extract_btn = QtWidgets.QPushButton(self.verticalLayoutWidget_3)
+        self.auto_extract_btn.setObjectName("auto_extract_btn")
+        self.verticalLayout_3.addWidget(self.auto_extract_btn)
         self.extract_btn = QtWidgets.QPushButton(self.verticalLayoutWidget_3)
         self.extract_btn.setObjectName("extract_btn")
         self.verticalLayout_3.addWidget(self.extract_btn)
+        self.add_btn = QtWidgets.QPushButton(self.verticalLayoutWidget_3)
+        self.add_btn.setObjectName("add_btn")
+        self.verticalLayout_3.addWidget(self.add_btn)
         self.stroke_listview = QtWidgets.QListView(self.verticalLayoutWidget_3)
         self.stroke_listview.setObjectName("stroke_listview")
         self.verticalLayout_3.addWidget(self.stroke_listview)
@@ -78,6 +84,8 @@ class Ui_MainWindow(object):
         self.clear_btn.setText(_translate("MainWindow", "Clear"))
         self.exit_btn.setText(_translate("MainWindow", "Exit"))
         self.radicalExtract_btn.setText(_translate("MainWindow", "Radicals Extracting"))
+        self.auto_extract_btn.setText(_translate("MainWindow", "Auto-extracting"))
         self.extract_btn.setText(_translate("MainWindow", "Extracting"))
+        self.add_btn.setText(_translate("MainWindow", "Add"))
         self.saveStroke_btn.setText(_translate("MainWindow", "Save Strokes"))
 
