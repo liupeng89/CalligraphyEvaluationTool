@@ -1,6 +1,7 @@
 import sys
 import math
 import cv2
+import os
 import numpy as np
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -26,13 +27,18 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
 
         self.image_gray = None
         self.radical_gray = None
+        self.stroke_gray = None
         self.image_path = ""
 
         # radicals
         self.radicals = []
         self.radicals_name = []
 
+        self.strokes = []
         self.strokes_name = []
+        self.stroke_selected_index = 0
+
+        self.image_name = ""
 
         self.radical_slm = QStringListModel()
         self.radical_slm.setStringList(self.radicals_name)
@@ -43,6 +49,7 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         self.stroke_slm = QStringListModel()
         self.stroke_slm.setStringList(self.strokes_name)
         self.stroke_listview.setModel(self.stroke_slm)
+        self.stroke_listview.clicked.connect(self.stroke_listview_item_clicked)
 
 
         # add listener
@@ -51,7 +58,9 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         self.clear_btn.clicked.connect(self.clearBtn)
         self.exit_btn.clicked.connect(self.exitBtn)
         self.radicalExtract_btn.clicked.connect(self.radicalsExtractBtn)
-        self.add_btn.clicked.connect(self.addBtn)
+        self.add_stroke_btn.clicked.connect(self.addStrokeBtn)
+        self.delete_stroke_btn.clicked.connect(self.deleteStrokeBtn)
+        self.saveStroke_btn.clicked.connect(self.strokesSaveBtn)
 
     def openBtn(self):
         """
@@ -65,6 +74,7 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
 
             # image file path
             self.image_path = filename
+            self.image_name = os.path.splitext(os.path.basename(filename))[0]
 
             qimage = QImage(filename)
             if qimage.isNull():
@@ -80,6 +90,7 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
             self.temp_image_pix = self.image_pix.copy()
             self.scene.addPixmap(self.image_pix)
             self.scene.update()
+            self.statusbar.showMessage("Open image file successed!")
 
     def radicalsExtractBtn(self):
         """
@@ -102,6 +113,11 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
             self.radicals_name.append("radical_" + str(i+1))
         self.radical_slm.setStringList(self.radicals_name)
 
+        self.scene.lastPoint = QPoint()
+        self.scene.endPoint = QPoint()
+
+        self.statusbar.showMessage("Radicals extracted successed!")
+
     def radicalsListView_clicked(self, qModelIndex):
         """
             Radical list view item clicked function.
@@ -111,6 +127,8 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         print("radical list %s th clicked!" % str(qModelIndex.row()))
 
         # numpy.narray to QImage and QPixmap
+
+        print("select item index: %d" % self.stroke_selected_index)
         img_ = self.radicals[qModelIndex.row()]
 
         if img_ is None:
@@ -120,6 +138,7 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
 
         # clean stroke name list
         self.strokes_name = []
+        self.strokes = []
 
         qimg = QImage(img_.data, img_.shape[1], img_.shape[0], img_.shape[1], QImage.Format_Indexed8)
 
@@ -128,7 +147,12 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         self.scene.addPixmap(self.image_pix)
         self.scene.update()
 
-    def addBtn(self):
+        self.scene.lastPoint = QPoint()
+        self.scene.endPoint = QPoint()
+
+        self.statusbar.showMessage("Radical listview item " + str(qModelIndex.row()) + " selected!")
+
+    def addStrokeBtn(self):
         """
             Select stroke from image, and add to strokes list.
         :return:
@@ -154,15 +178,71 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
 
         self.stroke_slm.setStringList(self.strokes_name)
 
+        self.strokes.append(saved_img)
+
         # clean the select points
         self.scene.points = []
         self.scene.lastPoint = QPoint()
         self.scene.endPoint = QPoint()
 
+        self.statusbar.showMessage("Stroke add successed!")
 
+    def deleteStrokeBtn(self):
+        """
+            Select stroke listview item, and delete it.
+        :return:
+        """
+        select_index = self.stroke_selected_index
+        print("index %d" % select_index)
 
+        if select_index < 0 or select_index >= len(self.strokes):
+            return
+        # pop item with index
+        print("len of strokes: %d" % len(self.strokes))
+        if len(self.strokes) > 1:
+            self.strokes.pop(select_index)
+            self.strokes_name.pop(select_index)
+        elif len(self.strokes) == 1:
+            self.strokes.pop()
+            self.strokes_name.pop()
 
+        self.stroke_slm.setStringList(self.strokes_name)
+        self.statusbar.showMessage("Stroke listview item " + str(select_index) + " deleted success!")
 
+    def stroke_listview_item_clicked(self, qModelIndex):
+        """
+            Strokes listview items clicked function
+        :param qModelIndex:
+        :return:
+        """
+        stroke_img = self.strokes[qModelIndex.row()]
+        if stroke_img is None:
+            QMessageBox.information(self, "Selected stroke image is None!")
+            return
+        stroke_img = np.array(stroke_img, dtype=np.uint8)
+        self.stroke_gray = stroke_img.copy()
+
+        self.stroke_selected_index = qModelIndex.row()
+
+        qimg = QImage(stroke_img.data, stroke_img.shape[1], stroke_img.shape[0], stroke_img.shape[1], QImage.Format_Indexed8)
+
+        self.image_pix = QPixmap.fromImage(qimg)
+        self.temp_image_pix = self.image_pix.copy()
+        self.scene.addPixmap(self.image_pix)
+        self.scene.update()
+        self.statusbar.showMessage("Strokes listview item " + str(self.stroke_selected_index) + " selected!" )
+
+    def strokesSaveBtn(self):
+        if self.strokes is None or len(self.strokes) == 0:
+            QMessageBox.information(self, "Strokes ar null!")
+            return
+        # save to selected path
+        fileName = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+        print(fileName)
+        for id, str_name in enumerate(self.strokes_name):
+            path = os.path.join(fileName, self.image_name + "_" + str_name + ".png")
+            cv2.imwrite(path, self.strokes[id])
+        self.statusbar.showMessage("Strokes saved successed!")
 
     def extractBtn(self):
         """
