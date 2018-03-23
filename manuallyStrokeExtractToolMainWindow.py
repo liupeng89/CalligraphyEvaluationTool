@@ -307,7 +307,11 @@ class GraphicsScene(QGraphicsScene):
         self.opt = opt
 
     def mousePressEvent(self, event):
-        print(event.scenePos())
+        """
+            Mouse press clicked!
+        :param event:
+        :return:
+        """
         pen = QPen(Qt.red)
         brush = QBrush(Qt.red)
         x = event.scenePos().x()
@@ -333,6 +337,11 @@ class GraphicsScene(QGraphicsScene):
         self.points.append((x, y))
 
     def mouseReleaseEvent(self, event):
+        """
+            Mouse release event!
+        :param event:
+        :return:
+        """
         pen = QPen(Qt.red)
 
         if self.lastPoint.x() != 0.0 and self.lastPoint.y() != 0.0:
