@@ -133,22 +133,100 @@ def main():
 
     # line examples
     line3 = contour_lines[3]
-    pf = fitpath(line3, error=2.5)
-    print(pf)
+    li_points = []
+    for i in range(len(line3)):
+        pt = []
+        pt.append(line3[i][0])
+        pt.append(line3[i][1])
+        li_points.append(pt)
+    li_points = np.array(li_points)
 
-    for pt in pf:
-        contour_rgb_clock[pt[1]][pt[0]] = (0, 255, 0)
+    beziers = fitCurve(li_points, maxError=100)
+    print("len bezier: %d" % len(beziers))
+    print(beziers)
 
 
-
-    cv2.imshow("src", img)
-    cv2.imshow("contour", contour)
-    cv2.imshow("corners", contour_rgb)
-    cv2.imshow("contour clock", contour_rgb_clock)
+    # cv2.imshow("src", img)
+    # cv2.imshow("contour", contour)
+    # cv2.imshow("corners", contour_rgb)
+    # cv2.imshow("contour clock", contour_rgb_clock)
     # cv2.imshow("contour counter clock", contour_rgb_counter_clock)
 
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+def binomial(i, n):
+    """
+    Binomal coefficient
+    :param i:
+    :param n:
+    :return:
+    """
+    return math.factorial(n) / float(
+        math.factorial(i) * math.factorial(n - i)
+    )
+
+
+def bernstein(t, i, n):
+    """
+    Bernstein polymn
+    :param t:
+    :param i:
+    :param n:
+    :return:
+    """
+    return binomial(i, n) * (t ** i) * ((1-t) * (n-i))
+
+
+def bezier(t, points):
+    """
+    Calculate coordinate of a point in the bezier curve
+    :param t:
+    :param points:
+    :return:
+    """
+    n = len(points) - 1
+    x = y = 0
+    for i, pos in enumerate(points):
+        bern = bernstein(t, i, n)
+        x += pos[0] * bern
+        y += pos[1] * bern
+    return x, y
+
+
+def bezier_curve_range(n, points):
+    """
+    Range of points in a curve bezier
+    :param n:
+    :param points:
+    :return:
+    """
+    for i in range(n):
+        t = i / float(n - 1)
+        yield bezier(t, points)
+
+
+def cubic_bezier_sum(t, w):
+    t2 = t * t
+    t3 = t2 * t
+    mt = 1 - t
+    mt2 = mt * mt
+    mt3 = mt2 * mt
+
+    return w[0]*mt3 + 3*w[1]*mt2*t + 3*w[2]*mt*t2 + w[3]*t3
+
+
+def draw_cubic_bezier(p1, p2, p3, p4):
+    points = []
+    t = 0
+    while t < 1:
+        x = int(cubic_bezier_sum(t, (p1[0], p2[0], p3[0], p4[0])))
+        y = int(cubic_bezier_sum(t, (p1[1], p2[1], p3[1], p4[1])))
+
+        points.append((x, y))
+        
+        t += 0.01
+    return points
 
 
 def fitCurve(points, maxError):
