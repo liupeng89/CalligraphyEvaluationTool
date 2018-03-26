@@ -382,6 +382,7 @@ def ray_tracing_method(x,y,poly):
 
     return inside
 
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     MainWindow = StrokeExtractToolMainWindow()

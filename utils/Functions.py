@@ -30,6 +30,7 @@ def splitConnectedComponents(image, connectivity=8):
 
 
 
+
 # Resize images of soure and target, return new square images
 # The width of new square should larger than the length of diagonal line of minimum bounding box.
 def resizeImages(source, target):
