@@ -2,7 +2,7 @@ import os
 import cv2
 import numpy as np
 from skimage.measure import compare_ssim as ssim
-from utils.Functions import calculateBoundingBox, calculateCR
+from utils.Functions import getSingleMaxBoundingBoxOfImage, calculateCoverageRate
 
 
 def main():
@@ -58,7 +58,7 @@ def main():
                 print(target_window.shape)
                 # diff = np.sum((np.abs(target_window - stroke_window))/255)
                 # diff_ssim = ssim(target_window, stroke_window)
-                diff_cr = calculateCR(stroke_window, target_window)
+                diff_cr = calculateCoverageRate(stroke_window, target_window)
                 print("diff cr: %f" % diff_cr)
 
                 if diff_cr > max_cr:
@@ -118,7 +118,7 @@ def getStrokesListFromTemplates(templates_path):
         print(temp_img.shape)
 
         # obtain the stroke window
-        x, y, w, h = calculateBoundingBox(temp_img)
+        x, y, w, h = getSingleMaxBoundingBoxOfImage(temp_img)
 
         stroke_window = temp_img[y:y+h, x:x+w]
         print(stroke_window.shape)

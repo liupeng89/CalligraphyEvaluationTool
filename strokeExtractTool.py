@@ -3,7 +3,7 @@ import numpy as np
 from collections import namedtuple
 from skimage.morphology import skeletonize
 from utils.Functions import getSkeletonOfImage, getEndPointsOfSkeletonLine, getCrossAreaPointsOfSkeletionLine, \
-    removeBranchOfSkeletonLine, getBoundingBoxes, getCrossPointsOfSkeletonLine, splitConnectedComponents
+    removeBranchOfSkeletonLine, getAllMiniBoundingBoxesOfImage, getCrossPointsOfSkeletonLine, splitConnectedComponents
 
 
 def main():
@@ -41,7 +41,7 @@ def main():
     end_points = getEndPointsOfSkeletonLine(part_skel)
     cross_points = getCrossPointsOfSkeletonLine(part_skel)
 
-    part_skel = removeBranchOfSkeletonLine(part_skel, end_points, cross_points)
+    part_skel = removeBranchOfSkeletonLine(part_skel, end_points, cross_points, )
 
     part_1_rgb_no_branch = cv2.cvtColor(part_1, cv2.COLOR_GRAY2RGB)
 

@@ -67,11 +67,11 @@ def main():
 
     if len(src_cross_points) > 0:
         # exist branches
-        src_skel = removeBranchOfSkeletonLine(src_skel, src_end_points, src_cross_points)
+        src_skel = removeBranchOfSkeletonLine(src_skel, src_end_points, src_cross_points, )
 
     if len(tag_cross_points) > 0:
         # exist branches
-        tag_skel = removeBranchOfSkeletonLine(tag_skel, tag_end_points, tag_cross_points)
+        tag_skel = removeBranchOfSkeletonLine(tag_skel, tag_end_points, tag_cross_points, )
 
     # src_skel_no_branch = removeBranchOfSkeletonLine(src_skel, src_end_points, src_cross_points)
     # tag_skel_no_btranch = removeBranchOfSkeletonLine(tag_skel, tag_end_points, tag_cross_points)

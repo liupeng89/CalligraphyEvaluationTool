@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from utils.Functions import getConvexHullOfImage, getPolygonArea, getValidPixelsArea, addIntersectedFig
+from utils.Functions import getConvexHullOfImage, calculatePolygonArea, calculateValidPixelsArea, addIntersectedFig
 
 
 def main():
@@ -29,8 +29,8 @@ def main():
             src_img_rgb = cv2.line(src_img_rgb, (src_l[idx][0], src_l[idx][1]), (src_l[0][0], src_l[0][1]), (0, 0, 255), 2)
         else:
             src_img_rgb = cv2.line(src_img_rgb, (src_l[idx][0], src_l[idx][1]), (src_l[idx+1][0], src_l[idx+1][1]), (0, 0, 255), 2)
-    src_convexhull_area = getPolygonArea(src_l)
-    src_valid_area = getValidPixelsArea(src_img)
+    src_convexhull_area = calculatePolygonArea(src_l)
+    src_valid_area = calculateValidPixelsArea(src_img)
     src_area_ratio = src_convexhull_area / (src_img.shape[0] * src_img.shape[1]) * 100
     src_valid_ratio = src_valid_area / src_convexhull_area * 100
     print("src area: %0.3f (%0.3f)" % (src_convexhull_area, src_area_ratio))
@@ -43,8 +43,8 @@ def main():
             tag_img_rgb = cv2.line(tag_img_rgb, (tag_l[idx][0], tag_l[idx][1]), (tag_l[0][0], tag_l[0][1]), (0, 0, 255), 2)
         else:
             tag_img_rgb = cv2.line(tag_img_rgb, (tag_l[idx][0], tag_l[idx][1]), (tag_l[idx+1][0], tag_l[idx+1][1]), (0, 0, 255), 2)
-    tag_convexhull_area = getPolygonArea(tag_l)
-    tag_valid_area = getValidPixelsArea(tag_img)
+    tag_convexhull_area = calculatePolygonArea(tag_l)
+    tag_valid_area = calculateValidPixelsArea(tag_img)
     tag_area_ratio = tag_convexhull_area / (tag_img.shape[0] * tag_img.shape[1]) * 100
     tag_valid_ratio = tag_valid_area / tag_convexhull_area * 100
     print("tag area: %0.3f (%0.3f)" % (tag_convexhull_area, tag_area_ratio))

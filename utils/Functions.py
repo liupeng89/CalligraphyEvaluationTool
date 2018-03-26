@@ -2,40 +2,18 @@ import cv2
 import math
 import numpy as np
 from math import sin, cos, sqrt
-
-
 from skimage.measure import compare_ssim as ssim
 
 
-def splitConnectedComponents(image, connectivity=8):
-    """
-        Split connected components from image.
-    :param image:
-    :param connectivity:
-    :return:
-    """
-    image_ = 255 - image
-
-    ret, labels = cv2.connectedComponents(image_, connectivity=connectivity)
-    components = []
-    for r in range(1, ret):
-        img_ = np.ones(image_.shape, dtype=np.uint8) * 255
-        for y in range(image_.shape[0]):
-            for x in range(image_.shape[1]):
-                if labels[y][x] == r:
-                    img_[y][x] = 0.0
-        components.append(img_)
-
-    return components
-
-
-
-
-# Resize images of soure and target, return new square images
-# The width of new square should larger than the length of diagonal line of minimum bounding box.
 def resizeImages(source, target):
-    src_minx, src_miny, src_minw, src_minh = calculateBoundingBox(source)
-    tag_minx, tag_miny, tag_minw, tag_minh = calculateBoundingBox(target)
+    """
+    Resize images of source and target, in order to as much as possible to make the two images the same size.
+    :param source: grayscale of source image.
+    :param target: grayscale of target image.
+    :return: resized-images of source and target.
+    """
+    src_minx, src_miny, src_minw, src_minh = getSingleMaxBoundingBoxOfImage(source)
+    tag_minx, tag_miny, tag_minw, tag_minh = getSingleMaxBoundingBoxOfImage(target)
 
     src_min_bounding = source[src_miny: src_miny + src_minh, src_minx: src_minx + src_minw]
     tag_min_bounding = target[tag_miny: tag_miny + tag_minh, tag_minx: tag_minx + tag_minw]
@@ -82,8 +60,8 @@ def resizeImages(source, target):
     #  line of new bounding box
     src_new_square = np.uint8(src_new_square)
     tag_new_square = np.uint8(tag_new_square)
-    src_new_minx, src_new_miny, src_new_minw, src_new_minh = calculateBoundingBox(src_new_square)
-    tag_new_minx, tag_new_miny, tag_new_minw, tag_new_minh = calculateBoundingBox(tag_new_square)
+    src_new_minx, src_new_miny, src_new_minw, src_new_minh = getSingleMaxBoundingBoxOfImage(src_new_square)
+    tag_new_minx, tag_new_miny, tag_new_minw, tag_new_minh = getSingleMaxBoundingBoxOfImage(tag_new_square)
 
     src_diag_line = int(sqrt(src_new_minw * src_new_minw + src_new_minh * src_new_minh))
     tag_diag_line = int(sqrt(tag_new_minw * tag_new_minw + tag_new_minh * tag_new_minh))
@@ -109,37 +87,16 @@ def resizeImages(source, target):
     ret, src_square = cv2.threshold(src_square, 127, 255, cv2.THRESH_BINARY)
     ret, tag_square = cv2.threshold(tag_square, 127, 255, cv2.THRESH_BINARY)
 
-
-
-    # # border add extra white space:  Width * 10%
-    # # source
-    # new_width = src_new_square.shape[0]
-    # new_height = src_new_square.shape[1]
-    #
-    # extra_width = int(new_width * 0.1)
-    # extra_height = int(new_height * 0.1)
-    #
-    # new_width += extra_width
-    # new_height += extra_height
-    #
-    # src_square = np.ones((new_width, new_height)) * 255
-    # tag_square = np.ones((new_width, new_height)) * 255
-    #
-    # src_square[int(extra_width/2): int(extra_width/2)+src_new_square.shape[0],
-    #             int(extra_height/2): int(extra_height/2) + src_new_square.shape[1]] = src_new_square
-    #
-    # tag_square[int(extra_width/2): int(extra_width/2)+tag_new_square.shape[0],
-    #             int(extra_height/2): int(extra_height/2)+ tag_new_square.shape[1]] = tag_new_square
-    #
-    # ret, src_square = cv2.threshold(src_square, 127, 255, cv2.THRESH_BINARY)
-    # ret, tag_square = cv2.threshold(tag_square, 127, 255, cv2.THRESH_BINARY)
-
     return src_square, tag_square
 
 
-# Add Minimum Bounding Box to a image
 def addMinBoundingBox(image):
-    x, y, w, h = calculateBoundingBox(image)
+    """
+    Adding the minimizing bounding rectangle boxing with green color to the RGB image of character.
+    :param image: Grayscale image of character.
+    :return: RGB image of character with green minimizing bounding boxing.
+    """
+    x, y, w, h = getSingleMaxBoundingBoxOfImage(image)
 
     image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
     image = cv2.rectangle(image,(x,y),(x+w,y+h),(0,255,0),2)
@@ -147,8 +104,13 @@ def addMinBoundingBox(image):
     return image
 
 
-# Add  Minimum Bounding box to the image.
-def calculateBoundingBox(image):
+def getSingleMaxBoundingBoxOfImage(image):
+    """
+    Calculate the coordinates(x, y, w, h) of single maximizing bounding rectangle boxing of grayscale image
+    of character, in order to using this bounding box to select the region of character.
+    :param image: grayscale image of character.
+    :return: coordinates(x, y, w, h) of single maximizing bounding boxing.
+    """
     if image is None:
         return None
 
@@ -174,11 +136,12 @@ def calculateBoundingBox(image):
     return minx, miny, maxx-minx, maxy-miny
 
 
-def getBoundingBoxes(image):
+def getAllMiniBoundingBoxesOfImage(image):
     """
-    Obtain all bounding boxes of character.
-    :param image:
-    :return:
+    Get all minimizing bounding boxes in the grayscale image of character. In order to select independented no-connected
+    region of character.
+    :param image: grayscale image of character.
+    :return: list of bounding boxes of character.
     """
     boxes = []
     if image is None:
@@ -199,9 +162,12 @@ def getBoundingBoxes(image):
     return boxes
 
 
-
-# Get thr rotated minimum bounding box
 def getRotatedMinimumBoundingBox(image):
+    """
+    Get the rotated minimizing bounding boxes of grayscale image of character.
+    :param image: grayscale image of character.
+    :return: list of rotated minimizing bounding boxes.
+    """
     if image is None:
         return None
 
@@ -213,30 +179,13 @@ def getRotatedMinimumBoundingBox(image):
     return box
 
 
-# get all bounding boxes from image
-# def getBoundingBoxes(image):
-#     if image is None:
-#         return None
-#     # moments
-#     im2, contours, _ = cv2.findContours(image, 1, 2)
-#
-#     result = []
-#     for i in range(len(contours)):
-#         item = []
-#         x, y, w, h = cv2.boundingRect(contours[i])
-#         item.append(x)
-#         item.append(y)
-#         item.append(w+2)
-#         item.append(h+2)
-#
-#         result.append(item)
-#
-#     return result
-
-
-
-# Coverage two images: source image is red image, and target image is blue image
 def coverTwoImages(source, target):
+    """
+    Using the target image (blue color) to cover the source image (red color).
+    :param source: grayscale image of source.
+    :param target: grayscale image of target.
+    :return: RGB image with using the target image (blue color) to cover the source image (red color).
+    """
 
     # grayscale images to RGB images
     WIDTH, HEIGHT = source.shape
@@ -261,12 +210,17 @@ def coverTwoImages(source, target):
     return coverage_img
 
 
-# Coverage image with maximum coverage rate
 def shiftImageWithMaxCR(source, target):
+    """
+    Shift the target image based on the maximizing coverage rate with the source image.
+    :param source: grayscale image of source.
+    :param target: grayscale image of target.
+    :return: Shifted target image.
+    """
     source = np.uint8(source)
     target = np.uint8(target)
-    src_minx, src_miny, src_minw, src_minh = calculateBoundingBox(source)
-    tag_minx, tag_miny, tag_minw, tag_minh = calculateBoundingBox(target)
+    src_minx, src_miny, src_minw, src_minh = getSingleMaxBoundingBoxOfImage(source)
+    tag_minx, tag_miny, tag_minw, tag_minh = getSingleMaxBoundingBoxOfImage(target)
 
     # new rect of src and tag images
     new_rect_x = min(src_minx, tag_minx)
@@ -293,7 +247,7 @@ def shiftImageWithMaxCR(source, target):
             new_tag_rect[tag_miny + offset_y0 + y: tag_miny + offset_y0 + y + tag_minh,
                     tag_minx + offset_x0 + x: tag_minx + offset_x0 + x + tag_minw] = target[tag_miny: tag_miny + tag_minh,
                                                                  tag_minx: tag_minx + tag_minw]
-            cr = calculateCR(new_tag_rect, source)
+            cr = calculateCoverageRate(new_tag_rect, source)
             if cr > max_cr:
                 offset_x = offset_x0 + x
                 offset_y = offset_y0 + y
@@ -307,20 +261,12 @@ def shiftImageWithMaxCR(source, target):
     return new_tag_rect
 
 
-def calculateCoverageRate(source, target):
-    """
-        Calculate the coverage rate of source and target images.
-    :param source:
-    :param target:
-    :return:
-    """
-    if source is None or target is None:
-        return 0.0
-
-
-
-# get Center of gravity
 def getCenterOfGravity(image):
+    """
+    Get the center of gravity of image.
+    :param image: grayscale image of character.
+    :return: (x, y), the coordinate of center of gravity of image.
+    """
     src_cog_x = 0; src_cog_y = 0
     total_pixels = 0
     for y in range(image.shape[0]):
@@ -335,19 +281,13 @@ def getCenterOfGravity(image):
     return src_cog_x, src_cog_y
 
 
-
-# Coverage images with maximum overlap area
-def coverageTwoImagesWithMaxOverlap(source, target):
-    pass
-
-
-# Coverage images with maximum SSIM
-def coverageTwoImagesWithMaxSSIM(source, target):
-    pass
-
-
-# Calcluate Coverage Rate
-def calculateCR(source, target):
+def calculateCoverageRate(source, target):
+    """
+    Corverage rate calculation.
+    :param source: grayscale image of source.
+    :param target: grayscale image of target.
+    :return: Coverage rate of source and target images.
+    """
     p_valid = np.sum(255.0 - source) / 255.0
 
     if p_valid == 0.0:
@@ -362,13 +302,22 @@ def calculateCR(source, target):
     return cr
 
 
-# Calculate SSIM
 def calculateSSIM(source, target):
+    """
+    SSIM calculation.
+    :param source: grayscale image of source.
+    :param target: grayscale image of target.
+    :return: SSIM of source and target images.
+    """
     return ssim(source, target) * 100.0
 
 
-# Add intersected figure of RGB image
 def addIntersectedFig(image):
+    """
+    Adding the intersected lines in the RGB image of character.
+    :param image: grayscale image of character.
+    :return: RGB image of character with intersected lines.
+    """
     if image is None:
         return None
 
@@ -400,8 +349,12 @@ def addIntersectedFig(image):
     return bk_img
 
 
-# Add squared figure of RGB image
 def addSquaredFig(image):
+    """
+    Adding the squared lines in the RGB image of character.
+    :param image: grayscale image of character.
+    :return: the RGB image of character with squared lines.
+    """
     if image is None:
         return None
 
@@ -436,15 +389,28 @@ def addSquaredFig(image):
     return bk_img
 
 
-# Function to konw if we have a CCW turn
 def RightTurn(p1, p2, p3):
+    """
+    Determing whether three points constitute a "left-turn" or "right-turn" by computing the z-coordinate of the
+    cross product of the two vectors P1P2 and P2P3, which is given by the expression (x2-x1)(y3-y1)-(y2-y1)(x3-x1). If
+    the result is 0, the points are colinear; if it is positive, the three points constitute a "left-turn" or counter-
+    clockwise (CCW) orientation, otherwise a "right-turn" or clockwise orientation.
+    :param p1: (x,y) of point P1
+    :param p2: (x,y) of point P2
+    :param p3: (x,y) of point P3
+    :return: is "right-turn" or not.
+    """
     if (p3[1]-p1[1]) * (p2[0]-p1[0]) >= (p2[1]-p1[1])*(p3[0]-p1[0]):
         return False
     return True
 
 
-# main algorithm
 def GrahamScan(P):
+    """
+    Graham Scan algorithm implementation of finding the convex hull of a finite set of points
+    :param P: list of coordinates of points.
+    :return: list of points on the convex hull boundary.
+    """
 
     P.sort()
     L_upper = [P[0], P[1]]
@@ -466,8 +432,12 @@ def GrahamScan(P):
     return np.array(L)
 
 
-# get convex hull of image
 def getConvexHullOfImage(image):
+    """
+    Get the convex hull of grayscale image of character.
+    :param image: graysale image of character.
+    :return: list of points on convex hull boundary of character.
+    """
     if image is None:
         return None
 
@@ -483,8 +453,12 @@ def getConvexHullOfImage(image):
     return L
 
 
-# Get Polygon Area (y,x)
-def getPolygonArea(points):
+def calculatePolygonArea(points):
+    """
+    Calculate the area of polygon.
+    :param points: the end points of the polygon.
+    :return: the area of polygon
+    """
     if points is None:
         return 0.0
     area = 0.0
@@ -497,15 +471,23 @@ def getPolygonArea(points):
     return area * 0.5
 
 
-# Get vaild pixels Area or number
-def getValidPixelsArea(image):
+def calculateValidPixelsArea(image):
+    """
+    Calculate the area of valid pixels region of grayscale image of character.
+    :param image: grayscale image of character.
+    :return: the area of valid pixels region of character.
+    """
     if image is None:
         return 0.0
     return np.sum(255.0 - image) / 255.0
 
 
-# get the area of convex hull
-def getAreaOfConvexHull(L):
+def calculateConvexHullArea(L):
+    """
+    Calculate the area of convex hull of grayscale image of character.
+    :param L: the end points of convex hull.
+    :return: the area of convex hull region.
+    """
     if L == None:
         return 0.0
     lines = np.hstack([L, np.roll(L, -1, axis=0)])
@@ -513,13 +495,18 @@ def getAreaOfConvexHull(L):
     return area
 
 
-# image rotate theta degree
-def rotate(image, theta):
+def rotateImage(image, theta):
+    """
+    Rotate image with theta degree.
+    :param image: grayscale image of character.
+    :param theta: rotation angle degree.
+    :return: the rotated grayscale image of character.
+    """
     if image is None:
         return None
 
     # bounding box
-    bx0, by0, bw, bh = calculateBoundingBox(image)
+    bx0, by0, bw, bh = getSingleMaxBoundingBoxOfImage(image)
 
     # center of retota
     x0 = bx0 + int(bw/2)
@@ -539,15 +526,20 @@ def rotate(image, theta):
     return new_img
 
 
-# rotate character with angle.
 def rotate_character(image, angle):
+    """
+    Rotate grayscale image of character.
+    :param image: grayscale image of character.
+    :param angle: rotation angle degree.
+    :return: rotated grayscale image of character.
+    """
     if image is None:
         return None
 
     image = np.uint8(image)
 
     # original image and four rectangle points
-    rx, ry, rw, rh = calculateBoundingBox(image)
+    rx, ry, rw, rh = getSingleMaxBoundingBoxOfImage(image)
     cx = rx + int(rw/2)
     cy = ry + int(rh/2)
 
@@ -564,8 +556,35 @@ def rotate_character(image, angle):
     return dst
 
 
-# return the connected components
+def splitConnectedComponents(image, connectivity=8):
+    """
+    Extract the connected components of character from image with Labeling algorithm.
+    :param image: image of grayscale image.
+    :param connectivity: connectivity of image (4, or 8)
+    :return: independented components of characters.
+    """
+    image_ = 255 - image
+
+    ret, labels = cv2.connectedComponents(image_, connectivity=connectivity)
+    components = []
+    for r in range(1, ret):
+        img_ = np.ones(image_.shape, dtype=np.uint8) * 255
+        for y in range(image_.shape[0]):
+            for x in range(image_.shape[1]):
+                if labels[y][x] == r:
+                    img_[y][x] = 0.0
+        components.append(img_)
+
+    return components
+
+
 def getConnectedComponents(image, connectivity=4):
+    """
+    Get the connected components of character from image with Labeling algorithm.
+    :param image: image of grayscale image.
+    :param connectivity: connectivity of image (4, or 8)
+    :return: independented components of characters.
+    """
     if image is None:
         return None
     # the image is black vaild pixels and white background pixels
@@ -585,8 +604,14 @@ def getConnectedComponents(image, connectivity=4):
     return components
 
 
-# get the contours of the image
 def getContourOfImage(image, minVal=100, maxVal=200):
+    """
+    Get the contour of grayscale image of character by using the Canny Edge Detection algorithm.
+    :param image: grayscale image of character.
+    :param minVal: minimizing value of Hysteresis thresholding.
+    :param maxVal: maximizing value of Hysteresis thresholding.
+    :return: grayscale image of edge.
+    """
     if image is None:
         return None
     # invert the color (background is black)
@@ -601,8 +626,15 @@ def getContourOfImage(image, minVal=100, maxVal=200):
     return edge
 
 
-# get skeleton of image
 def getSkeletonOfImage(image, shape=cv2.MORPH_CROSS, kernel=(3, 3)):
+    """
+    Get the skeletion of grayscale image of character.
+    :param image: grayscale image of character.
+    :param shape: element shape that could be one of the following: MORPH_RECT, MORPH_ELLIPSE, MORPH_CROSS, and
+        CV_SHAPE_CUSTOM.
+    :param kernel: size of the structuring element.
+    :return: the skeleton grayscale image of character.
+    """
     if image is None:
         return None
 
@@ -631,16 +663,14 @@ def getSkeletonOfImage(image, shape=cv2.MORPH_CROSS, kernel=(3, 3)):
     return skel
 
 
-def getSkeletonize(image):
-    """
-        Using the skimage.morphology.skeletonize to get the skeleton lines.
-    :param image:
-    :return:
-    """
-
-
-
 def getNumberOfValidPixels(image, x, y):
+    """
+    Get the number of valid pixels of the 8-neighbours of (x, y)
+    :param image: grayscale image of character
+    :param x: x value of Point (x, y)
+    :param y: y value of Point (x, y)
+    :return: the number of valid pixels of the 8-neighbours of (x, y)
+    """
     valid_num = 0
 
     # X2 point
@@ -680,9 +710,9 @@ def getNumberOfValidPixels(image, x, y):
 
 def getEndPointsOfSkeletonLine(image):
     """
-        Obtain the end points of skeleton line, suppose the image is the skeleton image(white background and black
-        skeleton line).
-    :param image:
+    Obtain the end points of skeleton line, suppose the image is the skeleton image(white background and black
+    skeleton line).
+    :param image: the skeleton grayscale image of character
     :return: the end points of skeleton line
     """
     end_points = []
@@ -704,9 +734,9 @@ def getEndPointsOfSkeletonLine(image):
 
 def getCrossAreaPointsOfSkeletionLine(image):
     """
-        Get all cross points in the cross area.
-    :param image:
-    :return:
+    Get all cross points in the cross area of skeleton lines of character.
+    :param image: the skeleton grayscale image of character.
+    :return: the cross points in the cross area of the skeleton lines of character.
     """
     cross_points = []
 
@@ -728,9 +758,9 @@ def getCrossAreaPointsOfSkeletionLine(image):
 
 def getCrossPointsOfSkeletonLine(image):
     """
-        Get the cross points of skeleton line to find the extra branch.
-    :param image:
-    :return: coordinate of cross points
+    Get the cross points of skeleton line.
+    :param image: the skeleton grayscale image of character.
+    :return: cross points of skeleton line of character.
     """
     cross_points = []
     cross_points_no_extra = []
@@ -776,17 +806,17 @@ def getCrossPointsOfSkeletonLine(image):
     return cross_points_no_extra
 
 
-DIST_THRESHOLD = 20
-
-
-def removeBranchOfSkeletonLine(image, end_points, cross_points):
+def removeBranchOfSkeletonLine(image, end_points, cross_points, DIST_THRESHOLD=20):
     """
-        Remove brches of skeleton line.
-    :param image:
-    :param end_points:
-    :param cross_points:
-    :return:
+    Remove the extra branches of skeleton lines of character.
+    :param DIST_THRESHOLD:
+    :param image: the skeleton grayscale image of character.
+    :param end_points: all end points of the skeleton lines.
+    :param cross_points: all cross points of the skeleton lines.
+    :param DIST_THRESHOLD: the distance threshold from cross points to end points.
+    :return: skeleton grayscale image of character without extra branches.
     """
+
     if image is None:
         return None
     # image = image.copy()
@@ -808,13 +838,13 @@ def removeBranchOfSkeletonLine(image, end_points, cross_points):
 
 def getPointsOfExtraBranchOfSkeletonLine(image, start_x, start_y, end_x, end_y):
     """
-        Obtain all points of extra branch of skeleton line: end point -> cross point
-    :param image:
-    :param start_x:
-    :param start_y:
-    :param end_x:
-    :param end_y:
-    :return: all points of extra branch
+    Get all points in the extra branch of skeleton lines from cross points to end points.
+    :param image: skeleton grayscale image of character.
+    :param start_x: x-axis value of cross point.
+    :param start_y: y-axis value of cross point.
+    :param end_x: x-axis value of end point.
+    :param end_y: y-axis value of end point.
+    :return: all points in the extra branch.
     """
     extra_branch_points = []
     start_point = (start_x, start_y)
@@ -874,13 +904,12 @@ def getPointsOfExtraBranchOfSkeletonLine(image, start_x, start_y, end_x, end_y):
     return extra_branch_points
 
 
-# Order points with clockwise oriented
-def order_points(image, isClockwise=True):
+def sortPointsOnContourOfImage(image, isClockwise=True):
     """
-        Order points on contour with clockwise direction or counter-clockwise direction
-    :param image:
-    :param isClockwise:
-    :return:
+    Sort the points on contour with clockwise direction or counter-clockwise direction
+    :param image: contour grayscale image of character.
+    :param isClockwise: clockwise or counter-clockwise.
+    :return: list of sorted points on contour of character.
     """
     if image is None:
         return
@@ -976,16 +1005,5 @@ def order_points(image, isClockwise=True):
         contour_points.reverse()
         return contour_points
 
-
-def radicalsExtract(image):
-    """
-        Radicals extracting from characters.
-    :param image:
-    :return:
-    """
-    if image is None:
-        return
-
-    #
 
 

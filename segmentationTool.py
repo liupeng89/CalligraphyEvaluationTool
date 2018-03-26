@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from utils.Functions import getBoundingBoxes
+from utils.Functions import getAllMiniBoundingBoxesOfImage
 import copy
 
 WIDTH_THRESHOLD = 15
@@ -34,7 +34,7 @@ def main():
     # img_bit = 255 - img_bit
 
     # get all bounding boxes
-    boxes = getBoundingBoxes(img_bit)
+    boxes = getAllMiniBoundingBoxesOfImage(img_bit)
     print("boxes len:%d" % len(boxes))
 
     # filter the boxes, and remove the biggest and too small boxes
@@ -144,8 +144,13 @@ def main():
     cv2.destroyAllWindows()
 
 
-# Check whether two rectangles are intersected with each other. (x, y, w, h)
 def isIntersectedOfTwoRectangles(rect1, rect2):
+    """
+    Detect whether two rectangles are intersected with each other or not.
+    :param rect1: rectangle 1
+    :param rect2: rectangle 2
+    :return: intersected or not.
+    """
     if rect1 is None or rect2 is None:
         return False
     if rect1[0] < rect2[0]+rect2[2] and rect1[0]+rect1[2] > rect2[0] and rect1[1] < rect2[1]+rect2[3] and rect1[1]+rect1[3] > rect2[1]:
@@ -154,6 +159,12 @@ def isIntersectedOfTwoRectangles(rect1, rect2):
 
 
 def combineRectangles(rectangles, rect_list):
+    """
+    Combining rectangles together.
+    :param rectangles: list of rectangles.
+    :param rect_list: list of index of rectangles in rectangles list.
+    :return: new combined rectangle.
+    """
     if rectangles is None or len(rect_list) == 0:
         return None
 

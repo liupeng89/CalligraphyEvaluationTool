@@ -2,7 +2,7 @@ import cv2
 import numpy
 
 
-from utils.Functions import calculateBoundingBox, calculateCR
+from utils.Functions import getSingleMaxBoundingBoxOfImage, calculateCoverageRate
 
 
 def main():
@@ -25,7 +25,7 @@ if __name__ == '__main__':
     # cv2.imshow("temp", temp_img)
 
     # bounding box
-    src_x, src_y, src_w, src_h = calculateBoundingBox(src_img)
+    src_x, src_y, src_w, src_h = getSingleMaxBoundingBoxOfImage(src_img)
     # temp_x, temp_y, temp_w, temp_h = calculateBoundingBox(temp_img)
 
     src_window = src_img[src_y: src_y+src_h, src_x:src_x+src_w]
@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
         temp_img = cv2.resize(temp_img, src_img.shape)
 
-        temp_x, temp_y, temp_w, temp_h = calculateBoundingBox(temp_img)
+        temp_x, temp_y, temp_w, temp_h = getSingleMaxBoundingBoxOfImage(temp_img)
         temp_window = temp_img[temp_y:temp_y + temp_h, temp_x:temp_x + temp_w]
 
         max_cr = -1000000000.0
@@ -74,7 +74,7 @@ if __name__ == '__main__':
         for y in range(src_h-temp_h):
             for x in range(src_w-temp_w):
                 win_ = src_window[y:y+temp_h, x:x+temp_w]
-                cr = calculateCR(win_, temp_window)
+                cr = calculateCoverageRate(win_, temp_window)
                 print(cr)
                 if cr > max_cr:
                     print("cr: %f" % cr)

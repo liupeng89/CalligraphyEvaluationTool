@@ -1,7 +1,7 @@
 import os
 import cv2
 import numpy as np
-from utils.Functions import calculateBoundingBox
+from utils.Functions import getSingleMaxBoundingBoxOfImage
 
 
 def main():
@@ -19,7 +19,7 @@ def main():
         temp_img = cv2.imread(temp_path, 0)
         _, temp_img = cv2.threshold(temp_img, 127, 255, cv2.THRESH_BINARY)
 
-        x, y, w, h = calculateBoundingBox(temp_img)
+        x, y, w, h = getSingleMaxBoundingBoxOfImage(temp_img)
 
         crop_img = temp_img[y: y+h, x: x+w]
 

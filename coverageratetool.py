@@ -1,5 +1,5 @@
 import cv2
-from utils.Functions import resizeImages, coverTwoImages, shiftImageWithMaxCR, calculateCR, addIntersectedFig, addSquaredFig
+from utils.Functions import resizeImages, coverTwoImages, shiftImageWithMaxCR, calculateCoverageRate, addIntersectedFig, addSquaredFig
 
 
 def main():
@@ -30,7 +30,7 @@ def main():
     # Cover Images
 
     coverage_img = coverTwoImages(src_img, tag_img)
-    cr = calculateCR(src_img, tag_img)
+    cr = calculateCoverageRate(src_img, tag_img)
     print("No shifting cr: %f" % cr)
 
     # coverage_img = addIntersectedFig(coverage_img)
@@ -41,7 +41,7 @@ def main():
 
     # Cover images
     coverage_img1 = coverTwoImages(src_img, new_tag_img)
-    cr = calculateCR(src_img, new_tag_img)
+    cr = calculateCoverageRate(src_img, new_tag_img)
     print("Shifting cr: %f" % cr)
 
     coverage_img_ = addIntersectedFig(coverage_img)

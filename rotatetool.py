@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from utils.Functions import rotate, resizeImages, calculateBoundingBox, rotate_character
+from utils.Functions import rotateImage, resizeImages, getSingleMaxBoundingBoxOfImage, rotate_character
 
 
 def main():

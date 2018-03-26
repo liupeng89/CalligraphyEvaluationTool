@@ -1,7 +1,7 @@
 import cv2
 import math
 import numpy as np
-from utils.Functions import getContourOfImage, order_points
+from utils.Functions import getContourOfImage, sortPointsOnContourOfImage
 import matplotlib.pyplot as plt
 
 from scipy import interpolate
@@ -29,7 +29,7 @@ def main():
     # print("number of points in no-order contour: %d" % contor_num)
 
     # order the contour points
-    contour_points_ordered = order_points(contour)
+    contour_points_ordered = sortPointsOnContourOfImage(contour)
     # contour_points_counter_clockwise = order_points(contour, isClockwise=False)
     print("number of points in ordered contour: %d" % len(contour_points_ordered))
     # print("counter clock: %d" % len(contour_points_counter_clockwise))

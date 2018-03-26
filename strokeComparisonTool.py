@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from utils.Functions import calculateBoundingBox, getContourOfImage, \
+from utils.Functions import getSingleMaxBoundingBoxOfImage, getContourOfImage, \
     getCrossPointsOfSkeletonLine, getEndPointsOfSkeletonLine, removeBranchOfSkeletonLine
 from skimage.morphology import skeletonize
 
@@ -17,8 +17,8 @@ def main():
     _, tag_img = cv2.threshold(tag_img, 127, 255, cv2.THRESH_BINARY)
 
     # get the minimum bounding boxs
-    src_box = calculateBoundingBox(src_img)
-    tag_box = calculateBoundingBox(tag_img)
+    src_box = getSingleMaxBoundingBoxOfImage(src_img)
+    tag_box = getSingleMaxBoundingBoxOfImage(tag_img)
 
     # get the region of strokes
     src_region = src_img[src_box[1]-5:src_box[1]+src_box[3]+5, src_box[0]-5: src_box[0]+src_box[2]+5]

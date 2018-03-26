@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from utils.Functions import getBoundingBoxes
+from utils.Functions import getAllMiniBoundingBoxesOfImage
 import math
 
 def main():
@@ -29,7 +29,7 @@ def main():
     # img_bit = 255 - img_bit
 
     # get all bounding boxes
-    boxes = getBoundingBoxes(img_bit)
+    boxes = getAllMiniBoundingBoxesOfImage(img_bit)
     print(len(boxes))
 
     boxes_ = []
@@ -186,8 +186,12 @@ def checkRectangle(rect, threshold):
         return False
 
 
-# get center of rectangles (x, y, w, h)
 def getCenterOfRectangles(rect):
+    """
+    Get the coordinate (x, y) of the center if rectangle.
+    :param rect: rectangle (x, y, w, h)
+    :return: (x, y) of center of rectangle.
+    """
     if rect is None:
         return None
     cx = rect[0] + int(rect[2]/2)
@@ -197,6 +201,12 @@ def getCenterOfRectangles(rect):
 
 
 def combineRectangles(rectangles, rect_list):
+    """
+    Combining rectangles together.
+    :param rectangles: list of rectangles.
+    :param rect_list: list of index of rectangles in rectangles list.
+    :return: new combined rectangle.
+    """
     if rectangles is None:
         return None
     if len(rect_list) == 1:
@@ -220,8 +230,6 @@ def combineRectangles(rectangles, rect_list):
         new_rect_h = max(new_rect_y+new_rect_h, rect_y+rect_h) - new_rect_y
 
     return new_rect_x, new_rect_y, new_rect_w, new_rect_h
-
-
 
 
 if __name__ == '__main__':
