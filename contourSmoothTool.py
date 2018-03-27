@@ -3,8 +3,10 @@ import math
 import numpy as np
 from utils.Functions import getContourOfImage, sortPointsOnContourOfImage
 import matplotlib.pyplot as plt
+from scipy.misc import comb
 
 from scipy import interpolate
+from utils.Functions import getNumberOfValidPixels
 
 def main():
 
@@ -20,13 +22,18 @@ def main():
     contour = getContourOfImage(img)
     contour_rgb = cv2.cvtColor(contour, cv2.COLOR_GRAY2RGB)
 
-    # contor_num = 0
-    # for y in range(contour.shape[0]):
-    #     for x in range(contour.shape[1]):
-    #         if contour[y][x] == 0.0:
-    #             contor_num += 1
-    #
-    # print("number of points in no-order contour: %d" % contor_num)
+    # fix breaking points on the contour
+    break_points = []
+    for y in range(1, contour.shape[0]-1):
+        for x in range(1, contour.shape[1]-1):
+            if contour[y][x] == 0.0:
+                num_ = getNumberOfValidPixels(contour, x, y)
+                if num_ == 1:
+                    print((x, y))
+                    break_points.append((x, y))
+    if len(break_points) != 0:
+        contour = cv2.line(contour, break_points[0], break_points[1], color=0, thickness=1)
+    cv2.imshow("c", contour)
 
     # order the contour points
     contour_points_ordered = sortPointsOnContourOfImage(contour)
@@ -35,31 +42,22 @@ def main():
     # print("counter clock: %d" % len(contour_points_counter_clockwise))
 
     contour_rgb_clock = contour_rgb.copy()
+    contour_smooth_rgb_clock = contour_rgb.copy()
+    fill_contour_smooth = contour.copy()
     # contour_rgb_counter_clock = contour_rgb.copy()
-
-    # for id, pt in enumerate(contour_points_ordered):
-    #     if id % 100 == 0:
-    #         cv2.circle(contour_rgb_clock, pt, 2, (0,255,0),-1)
-    #         cv2.putText(contour_rgb_clock, str(id), pt, cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0),2,cv2.LINE_AA)
-
-    # for id, pt in enumerate(contour_points_counter_clockwise):
-    #     if id % 100 == 0:
-    #         cv2.circle(contour_rgb_counter_clock, pt, 2, (0,255,0),-1)
-    #         cv2.putText(contour_rgb_counter_clock, str(id), pt, cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0),2,cv2.LINE_AA)
-
 
     # get key points on contour
     corners = cv2.goodFeaturesToTrack(contour, 10, 0.01, 10)
     corners = np.int0(corners)
+    print("number of key points on contour: %d" % len(corners))
 
     index = 0
     corner_points_ = []
     for i in corners:
+        MAX_DIST = 10000
         x,y = i.ravel()
         pt_ = None
-        if (x, y) in contour_points_ordered:
-            pt_ = (x, y)
-        elif (x, y-1) in contour_points_ordered:
+        if (x, y-1) in contour_points_ordered:
             pt_ = (x, y-1)
         elif (x+1, y-1) in contour_points_ordered:
             pt_ = (x+1, y-1)
@@ -75,6 +73,17 @@ def main():
             pt_ = (x-1, y)
         elif (x-1, y-1) in contour_points_ordered:
             pt_ = (x-1, y-1)
+        else:
+            # find the nearest point on the contour
+            minx = 0
+            miny = 0
+            for cp in contour_points_ordered:
+                dist = math.sqrt((x-cp[0])**2 + (y-cp[1])**2)
+                if dist < MAX_DIST:
+                    MAX_DIST = dist
+                    minx = cp[0]
+                    miny = cp[1]
+            pt_ = (minx, miny)
         corner_points_.append(pt_)
         cv2.circle(contour_rgb, (pt_[0], pt_[1]), 1, (0, 0, 255), -1)
         cv2.putText(contour_rgb, str(index), (pt_[0], pt_[1]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0),2,cv2.LINE_AA)
@@ -95,7 +104,7 @@ def main():
     contour_lines = []
     for id in range(len(corner_points)):
         start_point = corner_points[id]
-        end_point = None
+        end_point = start_point
         if id == len(corner_points) - 1:
             end_point = corner_points[0]
         else:
@@ -131,29 +140,169 @@ def main():
             for pt in contour_lines[id]:
                 contour_rgb_clock[pt[1]][pt[0]] = (0, 255, 0)
 
-    # line examples
-    line3 = contour_lines[3]
-    li_points = []
-    for i in range(len(line3)):
-        pt = []
-        pt.append(line3[i][0])
-        pt.append(line3[i][1])
-        li_points.append(pt)
-    li_points = np.array(li_points)
+    # original and smooth contour
+    smoothed_contour_points = []
+    for id in range(len(contour_lines)):
+        print("line index: %d" % id)
 
-    beziers = fitCurve(li_points, maxError=100)
-    print("len bezier: %d" % len(beziers))
-    print(beziers)
+        # original contour
+        for pt in contour_lines[id]:
+            contour_smooth_rgb_clock[pt[1]][pt[0]] = (0, 0, 255)
+
+        # smooth contour
+        li_points = np.array(contour_lines[id])
+
+        beziers = fitCurve(li_points, maxError=140)
+        print("len bezier: %d" % len(beziers))
+        # # print(beziers)
+        for bez in beziers:
+            print(len(bez))
+            bezier_points = draw_cubic_bezier(bez[0], bez[1], bez[2], bez[3])
+            for id in range(len(bezier_points) - 1):
+                start_pt = bezier_points[id]
+                end_pt = bezier_points[id + 1]
+                cv2.line(contour_smooth_rgb_clock, start_pt, end_pt, (0, 255, 0))
+            smoothed_contour_points += bezier_points
+
+    # fill contour
+    for y in range(fill_contour_smooth.shape[0]):
+        for x in range(fill_contour_smooth.shape[1]):
+            if point_inside_polygon(x, y, smoothed_contour_points):
+                fill_contour_smooth[y][x] = 0
+            else:
+                fill_contour_smooth[y][x] = 255
+
+    print(len(smoothed_contour_points))
+
+
+    # start_pt = end_pt = None
+    # for id in range(len(smoothed_contour_points)):
+    #     if id != len(smoothed_contour_points)-1:
+    #         start_pt = smoothed_contour_points[id]
+    #         end_pt = smoothed_contour_points[id+1]
+    #     elif id == len(smoothed_contour_points)-1:
+    #         start_pt = smoothed_contour_points[id]
+    #         end_pt = smoothed_contour_points[0]
+    #     cv2.line(contour_smooth_rgb_clock, start_pt, end_pt, (255, 0, 0))
+    #     if id % 100 == 0:
+    #         cv2.circle(contour_smooth_rgb_clock, (start_pt[0], start_pt[1]), 3, (255, 0, 0), -1)
+    #         cv2.putText(contour_smooth_rgb_clock, str(id), (start_pt[0], start_pt[1]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2,
+    #                     cv2.LINE_AA)
+
+
 
 
     # cv2.imshow("src", img)
-    # cv2.imshow("contour", contour)
+    cv2.imshow("contour", contour)
     # cv2.imshow("corners", contour_rgb)
-    # cv2.imshow("contour clock", contour_rgb_clock)
+    cv2.imshow("contour clock", contour_rgb_clock)
+    cv2.imshow("smooth contour clock", contour_smooth_rgb_clock)
     # cv2.imshow("contour counter clock", contour_rgb_counter_clock)
+    cv2.imshow("fill contour", fill_contour_smooth)
 
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+def point_inside_polygon(x, y, poly, include_edges=True):
+    '''
+    Test if point (x,y) is inside polygon poly.
+
+    poly is N-vertices polygon defined as
+    [(x1,y1),...,(xN,yN)] or [(x1,y1),...,(xN,yN),(x1,y1)]
+    (function works fine in both cases)
+
+    Geometrical idea: point is inside polygon if horisontal beam
+    to the right from point crosses polygon even number of times.
+    Works fine for non-convex polygons.
+    '''
+    n = len(poly)
+    inside = False
+
+    p1x, p1y = poly[0]
+    for i in range(1, n + 1):
+        p2x, p2y = poly[i % n]
+        if p1y == p2y:
+            if y == p1y:
+                if min(p1x, p2x) <= x <= max(p1x, p2x):
+                    # point is on horisontal edge
+                    inside = include_edges
+                    break
+                elif x < min(p1x, p2x):  # point is to the left from current edge
+                    inside = not inside
+        else:  # p1y!= p2y
+            if min(p1y, p2y) <= y <= max(p1y, p2y):
+                xinters = (y - p1y) * (p2x - p1x) / float(p2y - p1y) + p1x
+
+                if x == xinters:  # point is right on the edge
+                    inside = include_edges
+                    break
+
+                if x < xinters:  # point is to the left from current edge
+                    inside = not inside
+
+        p1x, p1y = p2x, p2y
+
+    return inside
+
+
+def bernstein_poly(i, n, t):
+    """
+     The Bernstein polynomial of n, i as a function of t
+    """
+
+    return comb(n, i) * ( t**(n-i) ) * (1 - t)**i
+
+
+def bezier_curve(points, nTimes=1000):
+    """
+       Given a set of control points, return the
+       bezier curve defined by the control points.
+
+       points should be a list of lists, or list of tuples
+       such as [ [1,1],
+                 [2,3],
+                 [4,5], ..[Xn, Yn] ]
+        nTimes is the number of time steps, defaults to 1000
+
+        See http://processingjs.nihongoresources.com/bezierinfo/
+    """
+
+    nPoints = len(points)
+    xPoints = np.array([p[0] for p in points])
+    yPoints = np.array([p[1] for p in points])
+
+    t = np.linspace(0.0, 1.0, nTimes)
+
+    polynomial_array = np.array([bernstein_poly(i, nPoints-1, t) for i in range(0, nPoints)])
+
+    xvals = np.dot(xPoints, polynomial_array)
+    yvals = np.dot(yPoints, polynomial_array)
+
+    return xvals, yvals
+
+def cubic_bezier_sum(t, w):
+    t2 = t * t
+    t3 = t2 * t
+    mt = 1 - t
+    mt2 = mt * mt
+    mt3 = mt2 * mt
+
+    return w[0] * mt3 + 3 * w[1] * mt2 * t + 3 * w[2] * mt * t2 + w[3] * t3
+
+
+def draw_cubic_bezier(p1, p2, p3, p4):
+    points = []
+    t = 0
+    while t < 1:
+        x = int(cubic_bezier_sum(t, (p1[0], p2[0], p3[0], p4[0])))
+        y = int(cubic_bezier_sum(t, (p1[1], p2[1], p3[1], p4[1])))
+
+        points.append((x, y))
+
+        t += 0.01
+    return points
+
 
 def binomial(i, n):
     """
