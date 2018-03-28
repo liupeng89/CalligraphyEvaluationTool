@@ -177,6 +177,10 @@ class SmoothContourMainWindow(QMainWindow, Ui_MainWindow):
         for pt in contour_points_ordered:
             if pt in corner_points_:
                 corner_points.append(pt)
+                cv2.circle(contour_rgb, (pt[0], pt[1]), 3, (255, 0, 0), -1)
+                cv2.putText(contour_rgb, str(index), (pt[0], pt[1]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2,
+                            cv2.LINE_AA)
+                index += 1
 
         # contour segemetations based on the corner points
         contour_lines = []
