@@ -43,11 +43,10 @@ def main():
 
     contour_rgb_clock = contour_rgb.copy()
     contour_smooth_rgb_clock = contour_rgb.copy()
-    fill_contour_smooth = contour.copy()
     # contour_rgb_counter_clock = contour_rgb.copy()
 
     # get key points on contour
-    corners = cv2.goodFeaturesToTrack(contour, 10, 0.01, 10)
+    corners = cv2.goodFeaturesToTrack(contour, 6, 0.01, 10)
     corners = np.int0(corners)
     print("number of key points on contour: %d" % len(corners))
 
@@ -152,7 +151,7 @@ def main():
         # smooth contour
         li_points = np.array(contour_lines[id])
 
-        beziers = fitCurve(li_points, maxError=140)
+        beziers = fitCurve(li_points, maxError=30)
         print("len bezier: %d" % len(beziers))
         # # print(beziers)
         for bez in beziers:
@@ -161,38 +160,17 @@ def main():
             for id in range(len(bezier_points) - 1):
                 start_pt = bezier_points[id]
                 end_pt = bezier_points[id + 1]
-                cv2.line(contour_smooth_rgb_clock, start_pt, end_pt, (0, 255, 0))
+                cv2.line(contour_smooth_rgb_clock, start_pt, end_pt, (255, 0, 0))
             smoothed_contour_points += bezier_points
 
-    # fill contour
-    for y in range(fill_contour_smooth.shape[0]):
-        for x in range(fill_contour_smooth.shape[1]):
-            if point_inside_polygon(x, y, smoothed_contour_points):
-                fill_contour_smooth[y][x] = 0
-            else:
-                fill_contour_smooth[y][x] = 255
-
+    # fill color in contour with sorted smooth contour points
     print(len(smoothed_contour_points))
+    smoothed_contour_points = np.array([smoothed_contour_points], "int32")
+    fill_contour_smooth = np.ones(img.shape) * 255
+    fill_contour_smooth = np.array(fill_contour_smooth, dtype=np.uint8)
+    fill_contour_smooth = cv2.fillPoly(fill_contour_smooth, smoothed_contour_points, 0)
 
-
-    # start_pt = end_pt = None
-    # for id in range(len(smoothed_contour_points)):
-    #     if id != len(smoothed_contour_points)-1:
-    #         start_pt = smoothed_contour_points[id]
-    #         end_pt = smoothed_contour_points[id+1]
-    #     elif id == len(smoothed_contour_points)-1:
-    #         start_pt = smoothed_contour_points[id]
-    #         end_pt = smoothed_contour_points[0]
-    #     cv2.line(contour_smooth_rgb_clock, start_pt, end_pt, (255, 0, 0))
-    #     if id % 100 == 0:
-    #         cv2.circle(contour_smooth_rgb_clock, (start_pt[0], start_pt[1]), 3, (255, 0, 0), -1)
-    #         cv2.putText(contour_smooth_rgb_clock, str(id), (start_pt[0], start_pt[1]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2,
-    #                     cv2.LINE_AA)
-
-
-
-
-    # cv2.imshow("src", img)
+    cv2.imshow("src", img)
     cv2.imshow("contour", contour)
     # cv2.imshow("corners", contour_rgb)
     cv2.imshow("contour clock", contour_rgb_clock)
