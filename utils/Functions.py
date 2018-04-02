@@ -626,6 +626,61 @@ def getContourOfImage(image, minVal=100, maxVal=200):
     return edge
 
 
+def removeBreakPointsOfContour(contour):
+    """
+    Remove the break points of contour to keep the contour close.
+    :param contour:
+    :return:
+    """
+    if contour is None:
+        return
+    # find all break points
+    break_points = []
+    for y in range(1, contour.shape[0]-1):
+        for x in range(1, contour.shape[1]-1):
+            if contour[y][x] == 0.0:
+
+                num_ = getNumberOfValidPixels(contour, x, y)
+                if num_ == 1:
+                    # break points
+                    break_points.append((x, y))
+    print("number of break points: %d" % len(break_points))
+    if len(break_points) % 2 != 0:
+        print("break points should be even number!")
+    bp_label = []
+    for id in range(len(break_points)):
+        bp_label.append(0.0)
+
+    # remove the break points pair
+    for id in range(len(break_points)):
+        if bp_label[id] == 1.:
+            continue
+        if bp_label[id] == 0.0:
+            bp_label[id] = 1.
+        max_dist = 100000.
+        start_point = break_points[id]
+        next_point = None
+        next_id = 0
+        for idx in range(id+1, len(break_points)):
+            if bp_label[idx] == 1.:
+                continue
+            dist_ = math.sqrt((start_point[0] - break_points[idx][0])**2 + (start_point[1] - break_points[idx][1])**2)
+            if dist_ < max_dist:
+                max_dist = dist_
+                next_point = (break_points[idx][0], break_points[idx][1])
+                next_id = idx
+        if next_point is None:
+            continue
+        else:
+            contour = cv2.line(contour, start_point, next_point, color=0, thickness=1)
+            bp_label[next_id] = 1.
+
+    return contour
+
+
+
+
+
 def getSkeletonOfImage(image, shape=cv2.MORPH_CROSS, kernel=(3, 3)):
     """
     Get the skeletion of grayscale image of character.

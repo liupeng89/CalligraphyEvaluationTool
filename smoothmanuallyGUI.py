@@ -8,7 +8,8 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
 from smoothmanuallymainwindow import Ui_MainWindow
-from utils.Functions import getContourOfImage
+from utils.Functions import getContourOfImage, removeBreakPointsOfContour, getNumberOfValidPixels, \
+                            sortPointsOnContourOfImage, fitCurve, draw_cubic_bezier
 
 
 class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
@@ -32,6 +33,7 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
         self.image_name = ""
 
         self.feature_points = []
+        self.contour_segmentations = []
 
         self.image_gray = None
         self.contour_gray = None
@@ -96,6 +98,9 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
         print("Contour button clicked")
         contour_ = getContourOfImage(self.image_gray)
 
+        # remove the break points
+        contour_ = removeBreakPointsOfContour(contour_)
+
         self.contour_gray = contour_.copy()
         qimg = QImage(contour_.data, contour_.shape[1], contour_.shape[0], contour_.shape[1], QImage.Format_Indexed8)
 
@@ -106,13 +111,84 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
 
         del contour_
 
-
     def smoothBtn(self):
         """
         Smooth button clicked!
         :return:
         """
         print("Smooth button clicked")
+        if self.scene.points is None or len(self.scene.points) == 0:
+            return
+        # max Error
+        max_error = int(self.maxerror_ledit.text())
+
+        # new contour image
+        contour_img = np.ones_like(self.contour_gray) * 255
+        contour_img = np.array(contour_img, dtype=np.uint8)
+
+
+        # smooth the contour segmentations.
+        contour_sorted = sortPointsOnContourOfImage(self.contour_gray.copy())
+
+        feature_points = []
+        for pt in self.scene.points:
+            nearest_pt = None
+            max_dist = 1000000
+            for cpt in contour_sorted:
+                dist_ = math.sqrt((pt[0]-cpt[0])**2 + (pt[1]-cpt[1])**2)
+                if dist_ < max_dist:
+                    max_dist = dist_
+                    nearest_pt = cpt
+            # select feature points
+            feature_points.append(nearest_pt)
+        # add first point as the last end point
+        feature_points.append(feature_points[0])
+        print(self.scene.points)
+        print(feature_points)
+
+        self.feature_points = feature_points.copy()
+
+        # extract segmentations based on the feature points
+        contour_segmentations = []
+        for id in range(len(feature_points)-1):
+            start_pt = feature_points[id]
+            end_pt = feature_points[id+1]
+
+            start_index = contour_sorted.index(start_pt)
+            end_index = contour_sorted.index(end_pt)
+
+            if start_index < end_index:
+                segmentation = contour_sorted[start_index: end_index]
+            elif start_index >= end_index:
+                segmentation = contour_sorted[start_index: len(contour_sorted)] + contour_sorted[0: end_index]
+
+            contour_segmentations.append(segmentation)
+        print("contour segmentation len: %d" % len(contour_segmentations))
+        self.contour_segmentations = contour_segmentations.copy()
+
+        # smooth contour segmentations
+        for id in range(len(self.contour_segmentations)):
+            print("Line index: %d" % id)
+
+            # smooth contour segmentation
+            li_seg = np.array(self.contour_segmentations[id])
+
+            beziers = fitCurve(li_seg, maxError=max_error)
+            for bez in beziers:
+                bezier_points = draw_cubic_bezier(bez[0], bez[1], bez[2], bez[3])
+
+                for id in range(len(bezier_points) - 1):
+                    start_pt = bezier_points[id]
+                    end_pt = bezier_points[id+1]
+                    cv2.line(contour_img, start_pt, end_pt, color=0, thickness=1)
+        print(contour_img)
+        qimg = QImage(contour_img.data, contour_img.shape[1], contour_img.shape[0], contour_img.shape[1], \
+                      QImage.Format_Indexed8)
+
+        contour_pix = QPixmap.fromImage(qimg)
+
+        self.scene.addPixmap(contour_pix)
+        self.scene.update()
 
     def autoSmoothBtn(self):
         """
@@ -141,6 +217,7 @@ class GraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
         QGraphicsScene.__init__(self, parent)
 
+        # usually the points are sorted by user.
         self.points = []
 
     def setOption(self, opt):
