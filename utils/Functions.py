@@ -1244,3 +1244,53 @@ def qprime(ctrlPoly, t):
 # evaluates cubic bezier second derivative at t, return point
 def qprimeprime(ctrlPoly, t):
     return 6*(1.0-t) * (ctrlPoly[2]-2*ctrlPoly[1]+ctrlPoly[0]) + 6*(t) * (ctrlPoly[3]-2*ctrlPoly[2]+ctrlPoly[1])
+
+
+def getCenterOfRectangles(rect):
+    """
+    Get the coordinate (x, y) of the center if rectangle.
+    :param rect: rectangle (x, y, w, h)
+    :return: (x, y) of center of rectangle.
+    """
+    if rect is None:
+        return None
+    cx = rect[0] + int(rect[2]/2)
+    cy = rect[1] + int(rect[3]/2)
+
+    return (cx, cy)
+
+
+def combineRectangles(rectangles, rect_list):
+    """
+    Combining rectangles together.
+    :param rectangles: list of rectangles.
+    :param rect_list: list of index of rectangles in rectangles list.
+    :return: new combined rectangle.
+    """
+    if rectangles is None:
+        return
+    if len(rect_list) == 1:
+        return rectangles[rect_list[0]]
+
+    new_rect_x0 = rectangles[rect_list[0]][0]
+    new_rect_y0 = rectangles[rect_list[0]][1]
+    new_rect_x1 = new_rect_x0 + rectangles[rect_list[0]][2]
+    new_rect_y1 = new_rect_y0 + rectangles[rect_list[0]][3]
+
+
+    for id in range(1, len(rect_list)):
+        print(id)
+        rect_x0 = rectangles[rect_list[id]][0]
+        rect_y0 = rectangles[rect_list[id]][1]
+        rect_x1 = rect_x0 + rectangles[rect_list[id]][2]
+        rect_y1 = rect_y0 + rectangles[rect_list[id]][3]
+
+        new_rect_x0 = min(new_rect_x0, rect_x0)
+        new_rect_y0 = min(new_rect_y0, rect_y0)
+
+        new_rect_x1 = max(new_rect_x1, rect_x1)
+        new_rect_y1 = max(new_rect_y1, rect_y1)
+
+    return new_rect_x0, new_rect_y0, new_rect_x1-new_rect_x0, new_rect_y1-new_rect_y0
+
+

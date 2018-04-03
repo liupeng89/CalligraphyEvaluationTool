@@ -1367,17 +1367,279 @@
 #     # print(ray_tracing_method(3, 1, points))
 import cv2
 import numpy as np
+import math
 
-from utils.Functions import getContourOfImage, removeBreakPointsOfContour, getNumberOfValidPixels
+from utils.Functions import getAllMiniBoundingBoxesOfImage, getCenterOfRectangles, combineRectangles
 
-img_path = "/Users/liupeng/Documents/PythonProjects/templates/stroke_2.png"
-img = cv2.imread(img_path, 0)
+def isIntersect(rect1, rect2):
+    is_intersect = False
+    if rect1 is None or rect2 is None:
+        return is_intersect
 
-contour = getContourOfImage(img)
+    ax1 = rect1[0]
+    ay1 = rect1[1]
 
-contour_no_break = removeBreakPointsOfContour(contour.copy())
+    ax2 = rect1[0]+rect1[2]
+    ay2 = rect1[1]+rect1[3]
 
-cv2.imshow("contour", contour)
-cv2.imshow("no break contour", contour_no_break)
+    bx1 = rect2[0]
+    by1 = rect2[1]
+
+    bx2 = rect2[0]+rect2[2]
+    by2 = rect2[1]+rect2[3]
+
+    if ax1 < bx2 and ax2 > bx1 and ay1 < by2 and ay2 > by1:
+        is_intersect = True
+    else:
+        is_intersect = False
+
+    return is_intersect
+
+dist_threshold = 60
+
+img_path = "seg_test.jpg"
+img_rgb = cv2.imread(img_path)
+
+img_rgb_no_inside = img_rgb.copy()
+img_rgb_combined = img_rgb.copy()
+
+img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
+
+_, img_binary = cv2.threshold(img_gray, 106, 255, cv2.THRESH_BINARY)
+
+boxes = getAllMiniBoundingBoxesOfImage(img_binary)
+
+for box in boxes:
+    cv2.rectangle(img_rgb, (box[0], box[1]), (box[0]+box[2], box[1]+box[3]), (0,0,255), 1)
+
+print("boxes len:%d" % len(boxes))
+
+boxes_ = []
+for box in boxes:
+    if box[2] < 5 or box[3] < 5:
+        continue
+    boxes_.append(box)
+
+del boxes
+boxes = boxes_.copy()
+del boxes_
+
+for box in boxes:
+    cv2.rectangle(img_rgb, (box[0], box[1]), (box[0]+box[2], box[1]+box[3]), (0,255,0), 1)
+
+print("boxes len:%d" % len(boxes))
+
+# remove inside rectangles
+inside_id = []
+for i in range(len(boxes)):
+    ri_x = boxes[i][0]
+    ri_y = boxes[i][1]
+    ri_w = boxes[i][2]
+    ri_h = boxes[i][3]
+
+    for j in range(len(boxes)):
+        if i == j or j in inside_id:
+            continue
+        rj_x = boxes[j][0]
+        rj_y = boxes[j][1]
+        rj_w = boxes[j][2]
+        rj_h = boxes[j][3]
+
+        # rect_j  inside rect_i
+        if ri_x <= rj_x and ri_y <= rj_y and ri_x + ri_w >= rj_x + rj_w and ri_y + ri_h >= rj_y + rj_h:
+            if j not in inside_id:
+                        inside_id.append(j)
+        elif rj_x <= ri_x and rj_y <= ri_y and rj_x + rj_w >= ri_x + ri_w and rj_y + rj_h >= ri_y + ri_h:
+            if i not in inside_id:
+                inside_id.append(i)
+
+print("inside id len: %d" % len(inside_id))
+
+boxes_noinside = []
+for i in range(len(boxes)):
+    if i in inside_id:
+        continue
+    boxes_noinside.append(boxes[i])
+print("no inside boxes len: %d" % len(boxes_noinside))
+
+for box in boxes_noinside:
+    cv2.rectangle(img_rgb_no_inside, (box[0], box[1]), (box[0]+box[2], box[1]+box[3]), (0,255,0), 1)
+
+# combine boxes with over
+# cluster = []
+# for i in range(len(boxes_noinside)):
+#     cluster_item = []
+#     cluster_item.append(i)
+#     # i-th rectangle
+#     ri_x = boxes_noinside[i][0]
+#     ri_y = boxes_noinside[i][1]
+#     ri_w = boxes_noinside[i][2]
+#     ri_h = boxes_noinside[i][3]
+#     for j in range(len(boxes_noinside)):
+#         if i == j:
+#             continue
+#         # i-th rectangle
+#         rj_x = boxes_noinside[j][0]
+#         rj_y = boxes_noinside[j][1]
+#         rj_w = boxes_noinside[j][2]
+#         rj_h = boxes_noinside[j][3]
+#
+#         if isIntersect(boxes_noinside[i], boxes_noinside[j]):
+#             cluster_item.append(j)
+#     cluster_item.sort()
+#     cluster.append(cluster_item)
+# print(cluster)
+
+
+# cluster rectangles based on the distance threshold
+lines = []
+for i in range(len(boxes_noinside)):
+    rect_item = []
+    rect_item.append(i)
+
+    ct_rect_i = getCenterOfRectangles(boxes_noinside[i])
+    start_index = i
+    end_index = start_index
+
+    for j in range(len(boxes_noinside)):
+        if i == j:
+            continue
+        ct_rect_j = getCenterOfRectangles(boxes_noinside[j])
+
+        dist = math.sqrt((ct_rect_j[0] - ct_rect_i[0])**2 + (ct_rect_j[1] - ct_rect_i[1])**2)
+        if dist <= dist_threshold:
+            rect_item.append(j)
+            cv2.line(img_rgb_no_inside, ct_rect_i, ct_rect_j, (0, 0, 255), 1)
+            end_index = j
+            lines.append([start_index, end_index])
+    if end_index == start_index:
+        lines.append([start_index, end_index])
+print(lines)
+
+# cluster based on the lines
+rects = []
+for i in range(len(lines)):
+    line = lines[i]
+    if line[0] == line[1]:
+        rects.append([line[0]])
+        print(line[0])
+    else:
+        new_set = set(line)
+        for j in range(len(lines)):
+            if i == j:
+                continue
+            set_j = set(lines[j])
+            if len(new_set.intersection(set_j)) != 0:
+                new_set = new_set.union(set_j)
+        if list(new_set) not in rects:
+            rects.append(list(new_set))
+print(rects)
+
+# remove the repeat items
+rects_ = []
+repet_id = []
+for i in range(len(rects)):
+    if i in repet_id:
+        continue
+    repet_id.append(i)
+    len1 = len(repet_id)
+    for j in range(len(rects)):
+        if i == j:
+            continue
+        if len(set(rects[j]).intersection(set(rects[i]))) != 0:
+            new_set = list(set(rects[j]).union(set(rects[i])))
+            rects_.append(new_set)
+            repet_id.append(j)
+    if len1 == len(repet_id):
+        rects_.append(rects[i])
+print(rects_)
+
+del rects
+rects = rects_.copy()
+del rects_
+for i in range(len(rects)):
+    new_rect = combineRectangles(boxes_noinside, rects[i])
+    # add border of rectangle with 5 pixels
+    new_r_x = 0
+    new_r_y = 0
+    new_r_w = 0
+    new_r_h = 0
+    if new_rect[0]-5 < 0:
+        new_r_x = 0
+    else:
+        new_r_x = new_rect[0] - 5
+    if new_rect[1]-5< 0:
+        new_r_y = 0
+    else:
+        new_r_y = new_rect[1] - 5
+
+    if new_rect[0]+new_rect[2]+10 > img_binary.shape[0]:
+        new_r_w = img_binary.shape[0] - new_rect[0]
+    else:
+        new_r_w = new_rect[2] + 10
+
+    if new_rect[1]+new_rect[3]+10 > img_binary.shape[1]:
+        new_r_h = img_binary.shape[1] - new_rect[0]
+    else:
+        new_r_h = new_rect[3] + 10
+
+    cv2.rectangle(img_rgb_combined, (new_r_x, new_r_y), (new_r_x+new_r_w, new_r_y+new_r_h),
+                          (0, 0, 255), 1)
+
+# n_rect = boxes_noinside[0]
+# cv2.rectangle(img_rgb_combined, (n_rect[0], n_rect[1]), (n_rect[0] + n_rect[2], n_rect[1] + n_rect[3]),
+#               (255, 0, 0), 1)
+# n_rect = boxes_noinside[1]
+# cv2.rectangle(img_rgb_combined, (n_rect[0], n_rect[1]), (n_rect[0] + n_rect[2], n_rect[1] + n_rect[3]),
+#               (255, 0, 0), 1)
+# n_rect = boxes_noinside[4]
+# cv2.rectangle(img_rgb_combined, (n_rect[0], n_rect[1]), (n_rect[0] + n_rect[2], n_rect[1] + n_rect[3]),
+#               (255, 0, 0), 1)
+# n_rect = boxes_noinside[8]
+# cv2.rectangle(img_rgb_combined, (n_rect[0], n_rect[1]), (n_rect[0] + n_rect[2], n_rect[1] + n_rect[3]),
+#               (255, 0, 0), 1)
+# n_rect = boxes_noinside[14]
+# cv2.rectangle(img_rgb_combined, (n_rect[0], n_rect[1]), (n_rect[0] + n_rect[2], n_rect[1] + n_rect[3]),
+#               (255, 0, 0), 1)
+# n_rect = boxes_noinside[19]
+# cv2.rectangle(img_rgb_combined, (n_rect[0], n_rect[1]), (n_rect[0] + n_rect[2], n_rect[1] + n_rect[3]),
+#               (255, 0, 0), 1)
+#
+# new_rect = combineRectangles(boxes_noinside, rects[0])
+# cv2.rectangle(img_rgb_combined, (new_rect[0], new_rect[1]), (new_rect[0] + new_rect[2], new_rect[1] + new_rect[3]),
+#                           (0, 0, 255), 1)
+
+
+
+# merge the cluster
+# final_cluster = []
+# used_index = []
+# for i in range(len(rect_clustor)):
+#     if i in used_index:
+#         continue
+#     new_cluster = rect_clustor[i]
+#
+#     # merge
+#     for j in range(i+1, len(rect_clustor)):
+#         if len(set(new_cluster).intersection(set(rect_clustor[j]))) == 0:
+#             continue
+#         new_cluster = list(set(new_cluster).union(set(rect_clustor[j])))
+#         used_index.append(j)
+#     final_cluster.append(new_cluster)
+# print(final_cluster)
+#
+#
+# for i in range(len(final_cluster)):
+#     new_rect = combineRectangles(boxes_noinside, final_cluster[i])
+#     cv2.rectangle(img_rgb_combined, (new_rect[0], new_rect[1]), (new_rect[0] + new_rect[2], new_rect[1] + new_rect[3]),
+#                           (0, 0, 255), 1)
+#
+# cv2.imshow("rgb", img_rgb)
+# cv2.imshow("gray", img_gray)
+# cv2.imshow("binary", img_binary)
+cv2.imshow("no inside", img_rgb_no_inside)
+cv2.imshow("combined", img_rgb_combined)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+
+
