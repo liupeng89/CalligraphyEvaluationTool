@@ -246,8 +246,6 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
         del smoothed_contour_points
         del fill_contour_smooth
 
-
-
     def exitBtn(self):
         """
         Exit
