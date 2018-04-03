@@ -34,6 +34,7 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
 
         self.feature_points = []
         self.contour_segmentations = []
+        self.smoothed_contour_points = []
 
         self.image_gray = None
         self.contour_gray = None
@@ -86,6 +87,9 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
         :return:
         """
         print("Clear button clicked")
+        # clean data
+        self.scene.points = []
+
         self.scene.addPixmap(self.image_pix)
         self.scene.update()
         self.statusbar.showMessage("Clear successed!")
@@ -108,7 +112,7 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
         self.temp_contour_pix = self.contour_pix.copy()
         self.scene.addPixmap(self.contour_pix)
         self.scene.update()
-
+        self.statusbar.showMessage("Contour successed!")
         del contour_
 
     def smoothBtn(self):
@@ -125,7 +129,6 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
         # new contour image
         contour_img = np.ones_like(self.contour_gray) * 255
         contour_img = np.array(contour_img, dtype=np.uint8)
-
 
         # smooth the contour segmentations.
         contour_sorted = sortPointsOnContourOfImage(self.contour_gray.copy())
@@ -159,14 +162,19 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
 
             if start_index < end_index:
                 segmentation = contour_sorted[start_index: end_index]
+                if end_index == len(contour_sorted)-1:
+                    segmentation.append(contour_sorted[0])
+                else:
+                    segmentation.append(contour_sorted[end_index+1])
             elif start_index >= end_index:
-                segmentation = contour_sorted[start_index: len(contour_sorted)] + contour_sorted[0: end_index]
+                segmentation = contour_sorted[start_index: len(contour_sorted)] + contour_sorted[0: end_index+1]
 
             contour_segmentations.append(segmentation)
         print("contour segmentation len: %d" % len(contour_segmentations))
         self.contour_segmentations = contour_segmentations.copy()
 
         # smooth contour segmentations
+        smoothed_contour_points = []
         for id in range(len(self.contour_segmentations)):
             print("Line index: %d" % id)
 
@@ -174,6 +182,7 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
             li_seg = np.array(self.contour_segmentations[id])
 
             beziers = fitCurve(li_seg, maxError=max_error)
+
             for bez in beziers:
                 bezier_points = draw_cubic_bezier(bez[0], bez[1], bez[2], bez[3])
 
@@ -181,7 +190,8 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
                     start_pt = bezier_points[id]
                     end_pt = bezier_points[id+1]
                     cv2.line(contour_img, start_pt, end_pt, color=0, thickness=1)
-        print(contour_img)
+                smoothed_contour_points += bezier_points
+
         qimg = QImage(contour_img.data, contour_img.shape[1], contour_img.shape[0], contour_img.shape[1], \
                       QImage.Format_Indexed8)
 
@@ -189,6 +199,17 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
 
         self.scene.addPixmap(contour_pix)
         self.scene.update()
+
+        # clean data
+        self.scene.points = []
+        self.contour_gray = contour_img.copy()
+        self.smoothed_contour_points = smoothed_contour_points.copy()
+
+        # update status bar
+        self.statusbar.showMessage("Smooth successed!")
+
+        # del smoothed_contour_points
+        # del contour_img
 
     def autoSmoothBtn(self):
         """
@@ -203,6 +224,29 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
         :return:
         """
         print("Save button clicked")
+
+        # contour image
+        contour_img = self.contour_gray.copy()
+
+        # fill the contour with black color
+        smoothed_contour_points = self.smoothed_contour_points.copy()
+        smoothed_contour_points = np.array([smoothed_contour_points], "int32")
+
+        fill_contour_smooth = np.ones(contour_img.shape) * 255
+        fill_contour_smooth = np.array(fill_contour_smooth, dtype=np.uint8)
+        fill_contour_smooth = cv2.fillPoly(fill_contour_smooth, smoothed_contour_points, 0)
+
+        # save path
+        fileName, _ = QFileDialog.getSaveFileName(self, "save file", QDir.currentPath())
+        cv2.imwrite(fileName, fill_contour_smooth)
+
+        self.statusbar.showMessage("Save image successed!")
+
+        del contour_img
+        del smoothed_contour_points
+        del fill_contour_smooth
+
+
 
     def exitBtn(self):
         """
