@@ -1557,83 +1557,42 @@ print(rects_)
 del rects
 rects = rects_.copy()
 del rects_
+
 for i in range(len(rects)):
     new_rect = combineRectangles(boxes_noinside, rects[i])
     # add border of rectangle with 5 pixels
+
+    # cv2.rectangle(img_rgb_combined, (new_rect[0], new_rect[1]), (new_rect[0] + new_rect[2], new_rect[1] + new_rect[3]),
+    #               (0, 0, 255), 1)
     new_r_x = 0
     new_r_y = 0
     new_r_w = 0
     new_r_h = 0
+
     if new_rect[0]-5 < 0:
         new_r_x = 0
     else:
         new_r_x = new_rect[0] - 5
+
     if new_rect[1]-5< 0:
         new_r_y = 0
     else:
         new_r_y = new_rect[1] - 5
 
-    if new_rect[0]+new_rect[2]+10 > img_binary.shape[0]:
-        new_r_w = img_binary.shape[0] - new_rect[0]
+    if new_rect[0]+new_rect[2]+10 > img_binary.shape[1]:
+        new_r_w = img_binary.shape[1] - new_rect[0]
     else:
         new_r_w = new_rect[2] + 10
 
-    if new_rect[1]+new_rect[3]+10 > img_binary.shape[1]:
-        new_r_h = img_binary.shape[1] - new_rect[0]
+    if new_rect[1]+new_rect[3]+10 > img_binary.shape[0]:
+        new_r_h = img_binary.shape[0] - new_rect[0]
     else:
         new_r_h = new_rect[3] + 10
 
     cv2.rectangle(img_rgb_combined, (new_r_x, new_r_y), (new_r_x+new_r_w, new_r_y+new_r_h),
-                          (0, 0, 255), 1)
-
-# n_rect = boxes_noinside[0]
-# cv2.rectangle(img_rgb_combined, (n_rect[0], n_rect[1]), (n_rect[0] + n_rect[2], n_rect[1] + n_rect[3]),
-#               (255, 0, 0), 1)
-# n_rect = boxes_noinside[1]
-# cv2.rectangle(img_rgb_combined, (n_rect[0], n_rect[1]), (n_rect[0] + n_rect[2], n_rect[1] + n_rect[3]),
-#               (255, 0, 0), 1)
-# n_rect = boxes_noinside[4]
-# cv2.rectangle(img_rgb_combined, (n_rect[0], n_rect[1]), (n_rect[0] + n_rect[2], n_rect[1] + n_rect[3]),
-#               (255, 0, 0), 1)
-# n_rect = boxes_noinside[8]
-# cv2.rectangle(img_rgb_combined, (n_rect[0], n_rect[1]), (n_rect[0] + n_rect[2], n_rect[1] + n_rect[3]),
-#               (255, 0, 0), 1)
-# n_rect = boxes_noinside[14]
-# cv2.rectangle(img_rgb_combined, (n_rect[0], n_rect[1]), (n_rect[0] + n_rect[2], n_rect[1] + n_rect[3]),
-#               (255, 0, 0), 1)
-# n_rect = boxes_noinside[19]
-# cv2.rectangle(img_rgb_combined, (n_rect[0], n_rect[1]), (n_rect[0] + n_rect[2], n_rect[1] + n_rect[3]),
-#               (255, 0, 0), 1)
-#
-# new_rect = combineRectangles(boxes_noinside, rects[0])
-# cv2.rectangle(img_rgb_combined, (new_rect[0], new_rect[1]), (new_rect[0] + new_rect[2], new_rect[1] + new_rect[3]),
-#                           (0, 0, 255), 1)
+                          (0, 255, 0), 1)
 
 
-
-# merge the cluster
-# final_cluster = []
-# used_index = []
-# for i in range(len(rect_clustor)):
-#     if i in used_index:
-#         continue
-#     new_cluster = rect_clustor[i]
-#
-#     # merge
-#     for j in range(i+1, len(rect_clustor)):
-#         if len(set(new_cluster).intersection(set(rect_clustor[j]))) == 0:
-#             continue
-#         new_cluster = list(set(new_cluster).union(set(rect_clustor[j])))
-#         used_index.append(j)
-#     final_cluster.append(new_cluster)
-# print(final_cluster)
-#
-#
-# for i in range(len(final_cluster)):
-#     new_rect = combineRectangles(boxes_noinside, final_cluster[i])
-#     cv2.rectangle(img_rgb_combined, (new_rect[0], new_rect[1]), (new_rect[0] + new_rect[2], new_rect[1] + new_rect[3]),
-#                           (0, 0, 255), 1)
-#
 # cv2.imshow("rgb", img_rgb)
 # cv2.imshow("gray", img_gray)
 # cv2.imshow("binary", img_binary)

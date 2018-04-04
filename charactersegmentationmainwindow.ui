@@ -96,6 +96,13 @@ Distance:</string>
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="extract_btn">
+       <property name="text">
+        <string>Extract</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="exit_btn">
        <property name="text">
         <string>Exit</string>

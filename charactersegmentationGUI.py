@@ -21,10 +21,16 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.image_gray = None
         self.image_binary = None
         self.image_characters = []
+        self.characters_name = []
 
         # scene
         self.scene = GraphicsScene()
         self.image_gview.setScene(self.scene)
+
+        self.char_slm = QStringListModel()
+        self.char_slm.setStringList(self.characters_name)
+        self.characters_list.setModel(self.char_slm)
+        self.characters_list.clicked.connect(self.charsListView_clicked)
 
         self.image_pix = QImage()
         self.temp_image_pix = QImage()
@@ -38,6 +44,7 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.convert_btn.clicked.connect(self.convertBtn)
 
         self.segmentation_btn.clicked.connect(self.segmentationBtn)
+        self.extract_btn.clicked.connect(self.extractBtn)
         self.exit_btn.clicked.connect(self.exitBtn)
         self.binary_threshold_slider.valueChanged.connect(self.binary_threshold_valuechange)
 
@@ -165,6 +172,12 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         """
         print("Segmentation button clicked!")
 
+        self.scene.clear()
+        self.image_characters = []
+        self.characters_name = []
+
+        img_rgb = self.image_rgb.copy()
+
         # distance threshold
         dist_threshold = int(self.thre_dist_ledit.text())
 
@@ -173,7 +186,7 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         boxes = getAllMiniBoundingBoxesOfImage(img_binary)
         boxes_ = []
         for box in boxes:
-            if box[2] < dist_threshold or box[3] < dist_threshold:
+            if box[2] < 5 or box[3] < 5:
                 continue
             boxes_.append(box)
 
@@ -216,53 +229,111 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         print("no inside boxes len: %d" % len(boxes_noinside))
 
         # cluster rectangles based on the distance threshold
-        rect_clustor = []
+        lines = []
         for i in range(len(boxes_noinside)):
             rect_item = []
             rect_item.append(i)
 
             ct_rect_i = getCenterOfRectangles(boxes_noinside[i])
+            start_index = i
+            end_index = start_index
 
             for j in range(len(boxes_noinside)):
+                if i == j:
+                    continue
                 ct_rect_j = getCenterOfRectangles(boxes_noinside[j])
 
-                dist = math.sqrt((ct_rect_j[0] - ct_rect_i[0]) * (ct_rect_j[0] - ct_rect_i[0]) + (ct_rect_j[1] - ct_rect_i[1]) * (
-                            ct_rect_j[1] - ct_rect_i[1]))
-                if dist <= dist_threshold and j not in rect_item:
+                dist = math.sqrt((ct_rect_j[0] - ct_rect_i[0]) ** 2 + (ct_rect_j[1] - ct_rect_i[1]) ** 2)
+                if dist <= dist_threshold:
                     rect_item.append(j)
-            rect_clustor.append(rect_item)
-        print(rect_clustor)
+                    # cv2.line(img_rgb_no_inside, ct_rect_i, ct_rect_j, (0, 0, 255), 1)
+                    end_index = j
+                    lines.append([start_index, end_index])
+            if end_index == start_index:
+                lines.append([start_index, end_index])
 
-        # merge the cluster
-        final_cluster = []
-        used_index = []
-        for i in range(len(rect_clustor)):
-            if i in used_index:
+        # cluster based on the lines
+        rects = []
+        for i in range(len(lines)):
+            line = lines[i]
+            if line[0] == line[1]:
+                rects.append([line[0]])
+            else:
+                new_set = set(line)
+                for j in range(len(lines)):
+                    if i == j:
+                        continue
+                    set_j = set(lines[j])
+                    if len(new_set.intersection(set_j)) != 0:
+                        new_set = new_set.union(set_j)
+                if list(new_set) not in rects:
+                    rects.append(list(new_set))
+
+        # remove the repeat items
+        rects_ = []
+        repet_id = []
+        for i in range(len(rects)):
+            if i in repet_id:
                 continue
-            new_cluster = rect_clustor[i]
-
-            # merge
-            for j in range(i+1, len(rect_clustor)):
-                if len(set(new_cluster).intersection(set(rect_clustor[j]))) == 0:
+            repet_id.append(i)
+            len1 = len(repet_id)
+            for j in range(len(rects)):
+                if i == j:
                     continue
-                new_cluster = list(set(new_cluster).union(set(rect_clustor[j])))
-                used_index.append(j)
-            final_cluster.append(new_cluster)
-        print(final_cluster)
+                if len(set(rects[j]).intersection(set(rects[i]))) != 0:
+                    new_set = list(set(rects[j]).union(set(rects[i])))
+                    rects_.append(new_set)
+                    repet_id.append(j)
+            if len1 == len(repet_id):
+                rects_.append(rects[i])
 
-        img_rgb = self.image_rgb.copy()
-        for i in range(len(final_cluster)):
-            new_rect = combineRectangles(boxes_noinside, final_cluster[i])
-            cv2.rectangle(img_rgb, (new_rect[0], new_rect[1]), (new_rect[0] + new_rect[2], new_rect[1] + new_rect[3]),
-                          (0, 0, 255), 1)
+        del rects
+        rects = rects_.copy()
+        del rects_
+
+        for i in range(len(rects)):
+            new_rect = combineRectangles(boxes_noinside, rects[i])
+            # add border of rectangle with 5 pixels
+            new_r_x = 0
+            new_r_y = 0
+            new_r_w = 0
+            new_r_h = 0
+
+            if new_rect[0] - 5 < 0:
+                new_r_x = 0
+            else:
+                new_r_x = new_rect[0] - 5
+
+            if new_rect[1] - 5 < 0:
+                new_r_y = 0
+            else:
+                new_r_y = new_rect[1] - 5
+
+            if new_rect[0] + new_rect[2] + 10 > img_binary.shape[1]:
+                new_r_w = img_binary.shape[1] - new_rect[0]
+            else:
+                new_r_w = new_rect[2] + 10
+
+            if new_rect[1] + new_rect[3] + 10 > img_binary.shape[0]:
+                new_r_h = img_binary.shape[0] - new_rect[0]
+            else:
+                new_r_h = new_rect[3] + 10
+
+            cv2.rectangle(img_rgb, (new_r_x, new_r_y), (new_r_x + new_r_w, new_r_y + new_r_h),
+                          (0, 255, 0), 1)
+            self.image_characters.append((new_r_x, new_r_y, new_r_w, new_r_h))
+            self.characters_name.append("character_" + str(i+1))
 
         # display RGB image
-        qimg = QImage(img_rgb.data, img_rgb.shape[1], img_rgb.shape[0], img_rgb.shape[1], QImage.Format_RGB32)
+        img_rgb = np.array(img_rgb)
+        qimg = QImage(img_rgb.data, img_rgb.shape[1], img_rgb.shape[0], QImage.Format_RGB888)
         self.image_pix = QPixmap.fromImage(qimg)
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
         self.scene.update()
+
+        self.char_slm.setStringList(self.characters_name)
 
         self.statusbar.showMessage("Segmentation processing successed!")
         del qimg
@@ -270,10 +341,56 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         del img_binary
         del boxes_noinside
         del boxes
-        del final_cluster
-        del rect_clustor
-        del used_index
         del inside_id
+
+    def charsListView_clicked(self, qModelIndex):
+        """
+
+        :param qModelIndex:
+        :return:
+        """
+        print("list item %d clicked" % qModelIndex.row())
+        self.scene.clear()
+        if len(self.image_characters) == 0:
+            return
+
+        rect = self.image_characters[qModelIndex.row()]
+
+        img_rect = self.image_rgb[rect[1]: rect[1]+rect[3], rect[0]:rect[0]+rect[2]]
+        img_rect = np.array(img_rect)
+        qimg = QImage(img_rect.data, img_rect.shape[1], img_rect.shape[0], QImage.Format_RGB888)
+
+        self.image_pix = QPixmap.fromImage(qimg)
+        self.temp_image_pix = self.image_pix.copy()
+
+        self.scene.addPixmap(self.image_pix)
+        self.scene.update()
+
+    def extractBtn(self):
+        """
+        Extract button clicked.
+        :return:
+        """
+        print("Extract button clicked!")
+        if len(self.image_characters) == 0:
+            return
+        # save path
+        fileName = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+        print(fileName)
+
+        # extract all characters
+        for i in range(len(self.image_characters)):
+            name_str = "character_" + str(i+1)
+            path = os.path.join(fileName, self.image_name + "_" + name_str + ".png")
+
+            # rect
+            rect = self.image_characters[i]
+
+            img_rect = self.image_rgb[rect[1]: rect[1] + rect[3], rect[0]:rect[0] + rect[2]]
+            img_rect = np.array(img_rect)
+
+            cv2.imwrite(path, img_rect)
+        self.statusbar.showMessage("Save characters successed!")
 
     def exitBtn(self):
         """

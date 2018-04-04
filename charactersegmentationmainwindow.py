@@ -56,6 +56,9 @@ class Ui_MainWindow(object):
         self.segmentation_btn = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.segmentation_btn.setObjectName("segmentation_btn")
         self.verticalLayout.addWidget(self.segmentation_btn)
+        self.extract_btn = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.extract_btn.setObjectName("extract_btn")
+        self.verticalLayout.addWidget(self.extract_btn)
         self.exit_btn = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.exit_btn.setObjectName("exit_btn")
         self.verticalLayout.addWidget(self.exit_btn)
@@ -104,6 +107,7 @@ class Ui_MainWindow(object):
         self.label.setText(_translate("MainWindow", "Threshold of \n"
 "Distance:"))
         self.segmentation_btn.setText(_translate("MainWindow", "Segmentation"))
+        self.extract_btn.setText(_translate("MainWindow", "Extract"))
         self.exit_btn.setText(_translate("MainWindow", "Exit"))
         self.label_2.setText(_translate("MainWindow", "Characters:"))
 
