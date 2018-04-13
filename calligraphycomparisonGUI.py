@@ -9,7 +9,6 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
@@ -103,6 +102,19 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         self.target_strokes_layout_scene = QGraphicsScene()
         self.target_strokes_layout_gview.setScene(self.target_strokes_layout_scene)
 
+        # Strokes coverage rate
+        self.strokes_cr_slm = QStringListModel()
+        self.strokes_cr_slm.setStringList(self.template_image_strokes_name)
+        self.strokes_cr_listview.setModel(self.strokes_cr_slm)
+        self.strokes_cr_listview.clicked.connect(self.strokes_item_selected)
+
+        self.strokes_cr_scene = QGraphicsScene()
+        self.strokes_cr_gview.setScene(self.strokes_cr_scene)
+
+        self.stroke_selected_name = ""
+        self.template_stroke_selected_gray = None
+        self.target_stroke_selected_gray = None
+
         # add listener
         self.open_template_btn.clicked.connect(self.openTemplatesBtn)
         self.open_target_btn.clicked.connect(self.openTargetsBtn)
@@ -154,6 +166,9 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
             # update the strokes layout listview
             print(self.template_image_strokes_name)
             self.strokes_layout_slm.setStringList(self.template_image_strokes_name)
+
+            # stroke comparison cr listview
+            self.strokes_cr_slm.setStringList(self.template_image_strokes_name)
 
             _, img_gray = cv2.threshold(img_gray, 127, 255, cv2.THRESH_BINARY)
             self.template_image_gray = img_gray.copy()
@@ -588,6 +603,58 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         del targ_img_rgb
         del targ_qimg
         del targ_pix
+
+    def strokes_item_selected(self, qModelIndex):
+        """
+        Strokes item selected.
+        :return:
+        """
+        self.strokes_cr_scene.clear()
+        print("Stroke %d selected!" % qModelIndex.row())
+        stroke_name = self.template_image_strokes_name[qModelIndex.row()]
+
+        self.stroke_selected_name = stroke_name
+
+        temp_stroke_path = self.template_image_stroke_path + stroke_name
+        targ_stroke_path = self.target_image_stroke_path + stroke_name
+
+        temp_img_gray = cv2.imread(temp_stroke_path, 0)
+        targ_img_gray = cv2.imread(targ_stroke_path, 0)
+
+        _, temp_img_gray = cv2.threshold(temp_img_gray, 127, 255, cv2.THRESH_BINARY)
+        _, targ_img_gray = cv2.threshold(targ_img_gray, 127, 255, cv2.THRESH_BINARY)
+
+        # resize
+        temp_img_gray, targ_img_gray = resizeImages(temp_img_gray, targ_img_gray)
+
+        # shit the target image to get the max cr
+        targ_img_gray = shiftImageWithMaxCR(temp_img_gray, targ_img_gray)
+
+        # set select stroke after resizing and shifting
+        self.template_stroke_selected_gray = temp_img_gray.copy()
+        self.target_stroke_selected_gray = targ_img_gray.copy()
+
+        cr = calculateCoverageRate(temp_img_gray, targ_img_gray)
+
+        self.strokes_cr_label.setText("%.2f" % cr)
+
+        # cover two image in one RGB image
+        cr_rgb = coverTwoImages(temp_img_gray, targ_img_gray)
+
+        # display RGB image
+        cr_rgb_qimg = rgb2qimage(cr_rgb)
+        cr_rgb_pix = QPixmap.fromImage(cr_rgb_qimg)
+        self.strokes_cr_scene.addPixmap(cr_rgb_pix)
+        self.strokes_cr_scene.update()
+
+        self.statusbar.showMessage("Stroke cr successed!")
+
+        del temp_img_gray
+        del targ_img_gray
+        del cr_rgb
+        del cr_rgb_pix
+        del cr_rgb_qimg
+
 
     def exitBtn(self):
         print("Exit button clicked!")
