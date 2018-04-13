@@ -3,6 +3,9 @@ import math
 import numpy as np
 from math import sin, cos, sqrt
 from skimage.measure import compare_ssim as ssim
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
 
 def resizeImages(source, target):
@@ -232,8 +235,6 @@ def shiftImageWithMaxCR(source, target):
     offset_y0 = -tag_miny
     offset_x0 = -tag_minx
 
-    # print("Offset o: (%d, %d)" % (offset_x0, offset_y0))
-
     diff_x = source.shape[0] - tag_minw
     diff_y = source.shape[1] - tag_minh
 
@@ -252,6 +253,7 @@ def shiftImageWithMaxCR(source, target):
                 offset_x = offset_x0 + x
                 offset_y = offset_y0 + y
                 max_cr = cr
+                print(max_cr)
 
     new_tag_rect = np.ones(target.shape) * 255
     new_tag_rect[tag_miny + offset_y: tag_miny + offset_y + tag_minh,
@@ -1294,3 +1296,36 @@ def combineRectangles(rectangles, rect_list):
     return new_rect_x0, new_rect_y0, new_rect_x1-new_rect_x0, new_rect_y1-new_rect_y0
 
 
+def rgb2qimage(rgb):
+    """Convert the 3D numpy array `rgb` into a 32-bit QImage.  `rgb` must
+    have three dimensions with the vertical, horizontal and RGB image axes.
+
+    ATTENTION: This QImage carries an attribute `ndimage` with a
+    reference to the underlying numpy array that holds the data. On
+    Windows, the conversion into a QPixmap does not copy the data, so
+    that you have to take care that the QImage does not get garbage
+    collected (otherwise PyQt will throw away the wrapper, effectively
+    freeing the underlying memory - boom!)."""
+    if len(rgb.shape) != 3:
+        raise ValueError("rgb2QImage can only convert 3D arrays")
+    if rgb.shape[2] not in (3, 4):
+        raise ValueError(
+            "rgb2QImage can expects the last dimension to contain exactly three (R,G,B) or four (R,G,B,A) channels")
+
+    h, w, channels = rgb.shape
+
+    # Qt expects 32bit BGRA data for color images:
+    bgra = np.empty((h, w, 4), np.uint8, 'C')
+    bgra[..., 0] = rgb[..., 0]
+    bgra[..., 1] = rgb[..., 1]
+    bgra[..., 2] = rgb[..., 2]
+    if rgb.shape[2] == 3:
+        bgra[..., 3].fill(255)
+        fmt = QImage.Format_RGB32
+    else:
+        bgra[..., 3] = rgb[..., 3]
+        fmt = QImage.Format_ARGB32
+
+    result = QImage(bgra.data, w, h, fmt)
+    result.ndarray = bgra
+    return result
