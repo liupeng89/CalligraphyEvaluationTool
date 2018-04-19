@@ -41,9 +41,11 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
 
         self.template_image_rgb = None
         self.template_image_gray = None
+        self.template_image_gray_no_resize = None
 
         self.target_image_rgb = None
         self.target_image_gray = None
+        self.target_image_gray_no_resize = None
 
         self.original_image_rgb = None
         self.target_image_rgb = None
@@ -53,30 +55,38 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
 
         # scene
         self.template_scene = QGraphicsScene()
+        self.template_scene.setBackgroundBrush(Qt.gray)
         self.template_gview.setScene(self.template_scene)
         self.template_scene.setSceneRect(QRectF())
         self.template_gview.fitInView(self.template_scene.sceneRect(), Qt.KeepAspectRatio)
 
         self.target_scene = QGraphicsScene()
+        self.target_scene.setBackgroundBrush(Qt.gray)
         self.target_gview.setScene(self.target_scene)
 
         self.cover_scene = QGraphicsScene()
+        self.cover_scene.setBackgroundBrush(Qt.gray)
         self.cover_gview.setScene(self.cover_scene)
 
         self.template_cog_scene = QGraphicsScene()
+        self.template_cog_scene.setBackgroundBrush(Qt.gray)
         self.cog_template_gview.setScene(self.template_cog_scene)
 
         self.target_cog_scene = QGraphicsScene()
+        self.target_cog_scene.setBackgroundBrush(Qt.gray)
         self.cog_target_gview.setScene(self.target_cog_scene)
 
         self.cog_comparison_scene = QGraphicsScene()
+        self.cog_comparison_scene.setBackgroundBrush(Qt.gray)
         self.cog_comparison_gview.setScene(self.cog_comparison_scene)
 
         # convex hull scene
         self.template_ch_scene = QGraphicsScene()
+        self.template_ch_scene.setBackgroundBrush(Qt.gray)
         self.template_ch_gview.setScene(self.template_ch_scene)
 
         self.target_ch_scene = QGraphicsScene()
+        self.target_ch_scene.setBackgroundBrush(Qt.gray)
         self.target_ch_gview.setScene(self.target_ch_scene)
 
         # plot of project
@@ -94,9 +104,11 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         self.targ_y_glayout.addWidget(self.targ_y_canvas)
 
         self.template_strokes_layout_scene = QGraphicsScene()
+        self.template_strokes_layout_scene.setBackgroundBrush(Qt.gray)
         self.template_strokes_layout_gview.setScene(self.template_strokes_layout_scene)
 
         self.target_strokes_layout_scene = QGraphicsScene()
+        self.target_strokes_layout_scene.setBackgroundBrush(Qt.gray)
         self.target_strokes_layout_gview.setScene(self.target_strokes_layout_scene)
 
         # Strokes coverage rate
@@ -106,11 +118,25 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         self.strokes_cr_listview.clicked.connect(self.strokes_item_selected)
 
         self.strokes_cr_scene = QGraphicsScene()
+        self.strokes_cr_scene.setBackgroundBrush(Qt.gray)
         self.strokes_cr_gview.setScene(self.strokes_cr_scene)
 
         self.stroke_selected_name = ""
         self.template_stroke_selected_gray = None
         self.target_stroke_selected_gray = None
+
+        # back the pixmap object
+        self.whole_cr_pix = None
+        self.whole_temp_goc_pix = None
+        self.whole_targ_goc_pix = None
+        self.whole_combine_goc_pix = None
+        self.whole_temp_ch_pix = None
+        self.whole_targ_ch_pix = None
+
+        self.radical_temp_layout_pix = None
+        self.radical_targ_layout_pix = None
+
+        self.stroke_cr_pix = None
 
         # add listener
         self.open_template_btn.clicked.connect(self.openTemplatesBtn)
@@ -123,6 +149,10 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         self.project_btn.clicked.connect(self.projectBtn)
         self.stroke_layout_btn.clicked.connect(self.storkeLayoutBtn)
 
+        self.whole_main_tabwidget.currentChanged.connect(self.wholeMainTabWidgetOnChange)
+        self.comparison_main_tab.currentChanged.connect(self.radicalMainTabWidgetOnChange)
+        self.stroke_main_tabwidget.currentChanged.connect(self.strokeMainTabWidgetOnChange)
+
     def openTemplatesBtn(self):
         """
         Open template button.
@@ -130,8 +160,7 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         """
         print("Open templates image button clicked!")
 
-        self.template_scene.clear()
-        self.cover_scene.clear()
+        self.template_scene.clear(); self.cover_scene.clear()
 
         filename, _ = QFileDialog.getOpenFileName(None, "Open template files", QDir.currentPath())
         if filename:
@@ -149,10 +178,9 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
             self.template_image_rgb = img_rgb.copy()
 
             parent_path = str(os.path.split(os.path.dirname(filename))[0])
-
             gray_path = parent_path + "/char/" + self.template_image_name + ".png"
-            try:
 
+            try:
                 img_gray = cv2.imread(gray_path, 0)
             except:
                 QMessageBox.information(self, "Template gray image", "Cannot load %s grayscale image." % filename)
@@ -170,10 +198,12 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
 
             _, img_gray = cv2.threshold(img_gray, 127, 255, cv2.THRESH_BINARY)
             self.template_image_gray = img_gray.copy()
+            self.template_image_gray_no_resize = img_gray.copy()
 
             # show original rgb image of template
             self.template_image_pix = QPixmap.fromImage(qimage)
             self.template_scene.addPixmap(self.template_image_pix)
+            # fit image in gview with fitting size
             self.template_scene.setSceneRect(QRectF())
             self.template_gview.fitInView(self.template_scene.sceneRect(), Qt.KeepAspectRatio)
             self.template_scene.update()
@@ -225,6 +255,7 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
                     self.target_image_strokes_name.append(fl)
 
             _, img_gray = cv2.threshold(img_gray, 127, 255, cv2.THRESH_BINARY)
+            self.target_image_gray_no_resize = img_gray.copy()
 
             # resize the tempate grayscale image based on the target grayscale image size
             if self.template_image_gray is None:
@@ -252,8 +283,13 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
             del qimage, img_rgb, img_gray,target_image_pix, template_image_gray, target_image_gray
 
     def calculateCRBtn(self):
+        """
+        Max coverage rate.
+        :return:
+        """
         print("Calculate Max cr button clicked!")
         self.cover_scene.clear()
+        self.whole_cr_pix = None
 
         if self.template_image_gray is None or self.target_image_gray is None:
             QMessageBox.information(self, "Grayscale image", "Grayscale image is None!")
@@ -261,11 +297,6 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         # grayscalue
         template_gray = self.template_image_gray.copy()
         target_gray = self.target_image_gray.copy()
-
-        # resize images
-        template_gray, target_gray = resizeImages(template_gray, target_gray)
-        print(template_gray.shape)
-        print(target_gray.shape)
 
         new_target_gray = shiftImageWithMaxCR(template_gray, target_gray)
         # new_target_gray = target_gray
@@ -279,14 +310,13 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
 
         cover_image_rgb = np.array(cover_image_rgb)
         qimg = rgb2qimage(cover_image_rgb)
-
         image_pix = QPixmap.fromImage(qimg)
 
         self.cover_scene.addPixmap(image_pix)
         self.cover_scene.setSceneRect(QRectF())
         self.cover_gview.fitInView(self.cover_scene.sceneRect(), Qt.KeepAspectRatio)
         self.cover_scene.update()
-
+        self.whole_cr_pix = image_pix.copy()
         self.statusbar.showMessage("Cover images successed!")
 
         del template_gray, target_gray, new_target_gray, cover_image_rgb, image_pix
@@ -297,6 +327,9 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         self.template_cog_scene.clear()
         self.target_cog_scene.clear()
         self.cog_comparison_scene.clear()
+        self.whole_temp_goc_pix = None
+        self.whole_targ_goc_pix = None
+        self.whole_combine_goc_pix = None
 
         if self.template_image_gray is None or self.target_image_gray is None:
             QMessageBox.information(self, "Grayscale image", "Grayscale image is None!")
@@ -304,8 +337,7 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         # grayscale images
         template_img_gray = self.template_image_gray.copy()
         target_img_gray = self.target_image_gray.copy()
-        # resize two images
-        template_img_gray, target_img_gray = resizeImages(template_img_gray, target_img_gray)
+
         template_img_gray = np.array(template_img_gray, dtype=np.uint8)
         target_img_gray = np.array(target_img_gray, dtype=np.uint8)
 
@@ -327,6 +359,7 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         self.template_cog_scene.setSceneRect(QRectF())
         self.cog_template_gview.fitInView(self.template_cog_scene.sceneRect(), Qt.KeepAspectRatio)
         self.template_cog_scene.update()
+        self.whole_temp_goc_pix = temp_pix.copy()
 
         # display target rgb image with center of gravity
         target_img_rgb = np.array(target_img_rgb)
@@ -336,6 +369,7 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         self.target_cog_scene.setSceneRect(QRectF())
         self.cog_target_gview.fitInView(self.target_cog_scene.sceneRect(), Qt.KeepAspectRatio)
         self.target_cog_scene.update()
+        self.whole_targ_goc_pix = target_pix.copy()
 
         # combine two center of gravity between two images.
         print(template_img_gray.shape)
@@ -357,6 +391,7 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         self.cog_comparison_scene.setSceneRect(QRectF())
         self.cog_comparison_gview.fitInView(self.cog_comparison_scene.sceneRect(), Qt.KeepAspectRatio)
         self.cog_comparison_scene.update()
+        self.whole_combine_goc_pix = combine_pix.copy()
 
         # update cog labels
         self.template_cog_label.setText("(%d, %d)" % (temp_cog_x, temp_cog_y))
@@ -370,6 +405,11 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
     def convexHullBtn(self):
         print("Convex hull button clicked!")
 
+        self.template_ch_scene.clear()
+        self.target_ch_scene.clear()
+        self.whole_temp_ch_pix = None
+        self.whole_targ_ch_pix = None
+
         if self.template_image_gray is None or self.target_image_gray is None:
             QMessageBox.information(self, "Grayscale image", "Grayscale image is None!")
             return
@@ -378,8 +418,6 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         template_img_gray = self.template_image_gray.copy()
         target_img_gray = self.target_image_gray.copy()
 
-        # resize images
-        template_img_gray, target_img_gray = resizeImages(template_img_gray, target_img_gray)
         template_img_gray = np.array(template_img_gray, dtype=np.uint8)
         target_img_gray = np.array(target_img_gray, dtype=np.uint8)
         print(template_img_gray.shape)
@@ -438,6 +476,7 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         self.template_ch_scene.setSceneRect(QRectF())
         self.template_ch_gview.fitInView(self.template_ch_scene.sceneRect(), Qt.KeepAspectRatio)
         self.template_ch_scene.update()
+        self.whole_temp_ch_pix = temp_pix.copy()
 
         target_img_rgb = np.array(target_img_rgb)
         targ_qimg = rgb2qimage(target_img_rgb)
@@ -447,6 +486,7 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         self.target_ch_scene.setSceneRect(QRectF())
         self.target_ch_gview.fitInView(self.target_ch_scene.sceneRect(), Qt.KeepAspectRatio)
         self.target_ch_scene.update()
+        self.whole_targ_ch_pix = targ_pix.copy()
 
         self.statusbar.showMessage("Convex hull successed!")
 
@@ -464,14 +504,12 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         template_img_gray = self.template_image_gray.copy()
         target_img_gray = self.target_image_gray.copy()
 
-        template_img_gray, target_img_gray = resizeImages(template_img_gray, target_img_gray)
         template_img_gray = np.array(template_img_gray, dtype=np.uint8)
         target_img_gray = np.array(target_img_gray, dtype=np.uint8)
         print(template_img_gray.shape)
 
         # X-axis and Y-axis statistics histogram
         temp_x_hist = np.zeros(template_img_gray.shape[1]); temp_y_hist = np.zeros(template_img_gray.shape[0])
-
         targ_x_hist = np.zeros(target_img_gray.shape[1]); targ_y_hist = np.zeros(target_img_gray.shape[0])
 
         # template X-axis and Y-axis histograms
@@ -497,7 +535,6 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         # calcluate the mean and variance
 
         temp_x_mean = np.mean(temp_x_hist); temp_y_mean = np.mean(temp_y_hist)
-
         targ_x_mean = np.mean(targ_x_hist); targ_y_mean = np.mean(targ_y_hist)
 
         x_means = np.array([temp_x_hist, targ_x_hist])
@@ -524,6 +561,14 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         :return:
         """
         print("Stroke layout button clicked!")
+
+        #clear
+        self.template_strokes_layout_scene.clear()
+        self.target_strokes_layout_scene.clear()
+
+        self.radical_temp_layout_pix = None
+        self.radical_targ_layout_pix = None
+
         temp_strokes_rect = []
         targ_strokes_rect = []
         # templates stroke rectangle
@@ -548,8 +593,8 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
             del stroke_gray
 
         # display all stroke rectangles on RGB images
-        temp_img_rgb = cv2.cvtColor(self.template_image_gray, cv2.COLOR_GRAY2RGB)
-        targ_img_rgb = cv2.cvtColor(self.target_image_gray, cv2.COLOR_GRAY2RGB)
+        temp_img_rgb = cv2.cvtColor(self.template_image_gray_no_resize, cv2.COLOR_GRAY2RGB)
+        targ_img_rgb = cv2.cvtColor(self.target_image_gray_no_resize, cv2.COLOR_GRAY2RGB)
 
         for idx in range(len(temp_strokes_rect)):
             rect_color = None
@@ -586,11 +631,13 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         self.template_strokes_layout_scene.setSceneRect(QRectF())
         self.template_strokes_layout_gview.fitInView(self.template_strokes_layout_scene.sceneRect(), Qt.KeepAspectRatio)
         self.template_strokes_layout_scene.update()
+        self.radical_temp_layout_pix = temp_pix.copy()
 
         self.target_strokes_layout_scene.addPixmap(targ_pix)
         self.target_strokes_layout_scene.setSceneRect(QRectF())
         self.target_strokes_layout_gview.fitInView(self.target_strokes_layout_scene.sceneRect(), Qt.KeepAspectRatio)
         self.target_strokes_layout_scene.update()
+        self.radical_targ_layout_pix = targ_pix.copy()
 
         self.statusbar.showMessage("Stroke layout successed!")
 
@@ -602,6 +649,8 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         :return:
         """
         self.strokes_cr_scene.clear()
+        self.stroke_cr_pix = None
+
         print("Stroke %d selected!" % qModelIndex.row())
         stroke_name = self.template_image_strokes_name[qModelIndex.row()]
 
@@ -640,6 +689,7 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         self.strokes_cr_scene.setSceneRect(QRectF())
         self.strokes_cr_gview.fitInView(self.strokes_cr_scene.sceneRect(), Qt.KeepAspectRatio)
         self.strokes_cr_scene.update()
+        self.stroke_cr_pix = cr_rgb_pix.copy()
 
         self.statusbar.showMessage("Stroke cr successed!")
 
@@ -649,6 +699,73 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         print("Exit button clicked!")
         qApp = QApplication.instance()
         sys.exit(qApp.exec_())
+
+    def wholeMainTabWidgetOnChange(self, i):
+        print("whole tab index: %d" % i)
+
+        if i == 0:
+            # whole cr tab click
+            if self.whole_cr_pix:
+                self.cover_scene.addPixmap(self.whole_cr_pix)
+                self.cover_scene.setSceneRect(QRectF())
+                self.cover_gview.fitInView(self.cover_scene.sceneRect(), Qt.KeepAspectRatio)
+                self.cover_scene.update()
+        elif i == 1:
+            # whole goc tab click
+            if self.whole_temp_goc_pix and self.whole_targ_goc_pix and self.whole_combine_goc_pix:
+                self.template_cog_scene.addPixmap(self.whole_temp_goc_pix)
+                self.template_cog_scene.setSceneRect(QRectF())
+                self.cog_template_gview.fitInView(self.template_cog_scene.sceneRect(), Qt.KeepAspectRatio)
+                self.template_cog_scene.update()
+
+                self.target_cog_scene.addPixmap(self.whole_targ_goc_pix)
+                self.target_cog_scene.setSceneRect(QRectF())
+                self.cog_target_gview.fitInView(self.target_cog_scene.sceneRect(), Qt.KeepAspectRatio)
+                self.target_cog_scene.update()
+
+                self.cog_comparison_scene.addPixmap(self.whole_combine_goc_pix)
+                self.cog_comparison_scene.setSceneRect(QRectF())
+                self.cog_comparison_gview.fitInView(self.cog_comparison_scene.sceneRect(), Qt.KeepAspectRatio)
+                self.cog_comparison_scene.update()
+        elif i == 2:
+            # whole ch tab click
+            if self.whole_temp_ch_pix and self.whole_targ_ch_pix:
+                self.template_ch_scene.addPixmap(self.whole_temp_ch_pix)
+                self.template_ch_scene.setSceneRect(QRectF())
+                self.template_ch_gview.fitInView(self.template_ch_scene.sceneRect(), Qt.KeepAspectRatio)
+                self.template_ch_scene.update()
+
+                self.target_ch_scene.addPixmap(self.whole_targ_ch_pix)
+                self.target_ch_scene.setSceneRect(QRectF())
+                self.target_ch_gview.fitInView(self.target_ch_scene.sceneRect(), Qt.KeepAspectRatio)
+                self.target_ch_scene.update()
+
+    def radicalMainTabWidgetOnChange(self, i):
+        print("radical tab index: %d" % i)
+        if i == 1:
+            # radical layout comparison
+            if self.radical_temp_layout_pix and self.radical_targ_layout_pix:
+                self.template_strokes_layout_scene.addPixmap(self.radical_temp_layout_pix)
+                self.template_strokes_layout_scene.setSceneRect(QRectF())
+                self.template_strokes_layout_gview.fitInView(self.template_strokes_layout_scene.sceneRect(),
+                                                             Qt.KeepAspectRatio)
+                self.template_strokes_layout_scene.update()
+
+                self.target_strokes_layout_scene.addPixmap(self.radical_targ_layout_pix)
+                self.target_strokes_layout_scene.setSceneRect(QRectF())
+                self.target_strokes_layout_gview.fitInView(self.target_strokes_layout_scene.sceneRect(),
+                                                           Qt.KeepAspectRatio)
+                self.target_strokes_layout_scene.update()
+
+    def strokeMainTabWidgetOnChange(self, i):
+        print("stroke tab index: %d" % i)
+        if i == 0:
+            # stroke cr
+            if self.stroke_cr_pix:
+                self.strokes_cr_scene.addPixmap(self.stroke_cr_pix)
+                self.strokes_cr_scene.setSceneRect(QRectF())
+                self.strokes_cr_gview.fitInView(self.strokes_cr_scene.sceneRect(), Qt.KeepAspectRatio)
+                self.strokes_cr_scene.update()
 
 
 class MplCanvas(FigureCanvas):

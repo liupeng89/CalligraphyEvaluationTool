@@ -8,7 +8,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
 from charactersegmentationmainwindow import Ui_MainWindow
-from utils.Functions import getAllMiniBoundingBoxesOfImage, getCenterOfRectangles, combineRectangles
+from utils.Functions import getAllMiniBoundingBoxesOfImage, getCenterOfRectangles, combineRectangles, rgb2qimage
 
 
 class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
@@ -25,6 +25,7 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
 
         # scene
         self.scene = GraphicsScene()
+        self.scene.setBackgroundBrush(Qt.gray)
         self.image_gview.setScene(self.scene)
 
         self.char_slm = QStringListModel()
@@ -74,6 +75,8 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
             self.temp_image_pix = self.image_pix.copy()
 
             self.scene.addPixmap(self.image_pix)
+            self.scene.setSceneRect(QRectF())
+            self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
             self.scene.update()
 
             self.statusbar.showMessage("Open image: %s successed!" % self.image_name)
@@ -100,6 +103,8 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
+        self.scene.setSceneRect(QRectF())
+        self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
 
         self.statusbar.showMessage("Grayscale processing successed!")
@@ -127,6 +132,8 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
+        self.scene.setSceneRect(QRectF())
+        self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
 
         self.statusbar.showMessage("Conveting color processing successed!")
@@ -157,6 +164,8 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
+        self.scene.setSceneRect(QRectF())
+        self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
 
         self.threshold_label.setText(str(binary_threshold))
@@ -331,6 +340,8 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
+        self.scene.setSceneRect(QRectF())
+        self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
 
         self.char_slm.setStringList(self.characters_name)
@@ -345,7 +356,6 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
 
     def charsListView_clicked(self, qModelIndex):
         """
-
         :param qModelIndex:
         :return:
         """
@@ -357,14 +367,20 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         rect = self.image_characters[qModelIndex.row()]
 
         img_rect = self.image_rgb[rect[1]: rect[1]+rect[3], rect[0]:rect[0]+rect[2]]
-        img_rect = np.array(img_rect)
-        qimg = QImage(img_rect.data, img_rect.shape[1], img_rect.shape[0], QImage.Format_RGB888)
+        img_rect = np.array(img_rect, dtype=np.uint8)
+        qimg = rgb2qimage(img_rect)
 
         self.image_pix = QPixmap.fromImage(qimg)
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
+        self.scene.setSceneRect(QRectF())
+        self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
+
+        del rect
+        del img_rect
+        del qimg
 
     def extractBtn(self):
         """
@@ -391,6 +407,9 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
 
             cv2.imwrite(path, img_rect)
         self.statusbar.showMessage("Save characters successed!")
+
+        del rect
+        del img_rect
 
     def exitBtn(self):
         """

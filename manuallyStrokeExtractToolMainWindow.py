@@ -20,10 +20,11 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         self.temp_image_pix = QPixmap()
 
         self.scene = GraphicsScene()
+        self.scene.setBackgroundBrush(Qt.gray)
         self.image_view.setScene(self.scene)
 
-        self.lastPoint = QPoint()
-        self.endPoint = QPoint()
+        self.lastPoint = None
+        self.endPoint = None
 
         self.image_gray = None
         self.radical_gray = None
@@ -69,6 +70,10 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         """
         print("Open button clicked!")
         self.scene.clear()
+        self.lastPoint = None
+        self.endPoint = None
+        self.clearBtn()
+
         filename, _ = QFileDialog.getOpenFileName(None, "Open file", QDir.currentPath())
         if filename:
 
@@ -89,8 +94,12 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
             self.image_pix = QPixmap.fromImage(qimage)
             self.temp_image_pix = self.image_pix.copy()
             self.scene.addPixmap(self.image_pix)
+            self.scene.setSceneRect(QRectF())
+            self.image_view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
             self.scene.update()
             self.statusbar.showMessage("Open image file successed!")
+
+            del qimage, img_
 
     def radicalsExtractBtn(self):
         """
@@ -98,6 +107,12 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         :return:
         """
         print("Radicals extract btn clicked!")
+
+        # clean
+        self.scene.clear()
+        self.lastPoint = None
+        self.endPoint = None
+
         if self.image_gray is None:
             QMessageBox.information(self, "Grayscale image is None!")
             return
@@ -117,6 +132,7 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         self.scene.endPoint = QPoint()
 
         self.statusbar.showMessage("Radicals extracted successed!")
+        del radicals
 
     def radicalsListView_clicked(self, qModelIndex):
         """
@@ -125,6 +141,9 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         :return:
         """
         print("radical list %s th clicked!" % str(qModelIndex.row()))
+        self.scene.clear()
+        self.lastPoint = None
+        self.endPoint = None
 
         # numpy.narray to QImage and QPixmap
 
@@ -137,8 +156,8 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         self.radical_gray = img_.copy()
 
         # clean stroke name list
-        self.strokes_name = []
-        self.strokes = []
+        # self.strokes_name = []
+        # self.strokes = []
 
         qimg = QImage(img_.data, img_.shape[1], img_.shape[0], img_.shape[1], QImage.Format_Indexed8)
 
@@ -147,10 +166,8 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         self.scene.addPixmap(self.image_pix)
         self.scene.update()
 
-        self.scene.lastPoint = QPoint()
-        self.scene.endPoint = QPoint()
-
         self.statusbar.showMessage("Radical listview item " + str(qModelIndex.row()) + " selected!")
+        del img_, qimg
 
     def addStrokeBtn(self):
         """
@@ -182,10 +199,11 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
 
         # clean the select points
         self.scene.points = []
-        self.scene.lastPoint = QPoint()
-        self.scene.endPoint = QPoint()
+        self.scene.lastPoint = None
+        self.scene.endPoint = None
 
         self.statusbar.showMessage("Stroke add successed!")
+        del saved_img
 
     def deleteStrokeBtn(self):
         """
@@ -231,6 +249,7 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         self.scene.addPixmap(self.image_pix)
         self.scene.update()
         self.statusbar.showMessage("Strokes listview item " + str(self.stroke_selected_index) + " selected!" )
+        del stroke_img, qimg
 
     def strokesSaveBtn(self):
         if self.strokes is None or len(self.strokes) == 0:
@@ -266,6 +285,9 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         print("save path: " + fileName)
         cv2.imwrite(fileName, saved_img)
 
+        self.statusbar.showMessage("Stroke saved successed!")
+        del saved_img
+
     def clearBtn(self):
         """
             Clear button clicked function.
@@ -274,8 +296,8 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         print("Clear !")
 
         # remove existing points
-        self.scene.lastPoint = QPoint()
-        self.scene.endPoint = QPoint()
+        self.scene.lastPoint = None
+        self.scene.endPoint = None
         self.scene.points = []
 
         # remove points in image
@@ -296,8 +318,8 @@ class GraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
         QGraphicsScene.__init__(self, parent)
 
-        self.lastPoint = QPoint()
-        self.endPoint = QPoint()
+        self.lastPoint = None
+        self.endPoint = None
 
         self.points = []
         self.strokes = []
@@ -326,6 +348,7 @@ class GraphicsScene(QGraphicsScene):
 
             dist = math.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
             if dist < self.T_DISTANCE:
+                # end and close point
                 pen_ = QPen(Qt.green)
                 brush_ = QBrush(Qt.green)
                 self.addEllipse(x0, y0, 2, 2, pen_, brush_)
@@ -344,7 +367,7 @@ class GraphicsScene(QGraphicsScene):
         """
         pen = QPen(Qt.red)
 
-        if self.lastPoint.x() != 0.0 and self.lastPoint.y() != 0.0:
+        if self.lastPoint is not None and self.lastPoint is not None:
             self.addLine(self.endPoint.x(), self.endPoint.y(), self.lastPoint.x(), self.lastPoint.y(), pen)
 
         self.lastPoint = self.endPoint
@@ -386,7 +409,5 @@ def ray_tracing_method(x,y,poly):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     MainWindow = StrokeExtractToolMainWindow()
-    # ui = strokeExtractingMainwindow.Ui_MainWindow()
-    # ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())

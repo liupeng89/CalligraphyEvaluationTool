@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QTabWidget" name="tabWidget">
+   <widget class="QTabWidget" name="comparison_main_tab">
     <property name="geometry">
      <rect>
       <x>339</x>
@@ -24,13 +24,13 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>2</number>
     </property>
-    <widget class="QWidget" name="tab">
+    <widget class="QWidget" name="whole_comparison_tab">
      <attribute name="title">
       <string>Whole Comparison</string>
      </attribute>
-     <widget class="QTabWidget" name="tabWidget_2">
+     <widget class="QTabWidget" name="whole_main_tabwidget">
       <property name="geometry">
        <rect>
         <x>-1</x>
@@ -42,7 +42,7 @@
       <property name="currentIndex">
        <number>3</number>
       </property>
-      <widget class="QWidget" name="tab_4">
+      <widget class="QWidget" name="whole_cr_tab">
        <attribute name="title">
         <string>Coverage Rate</string>
        </attribute>
@@ -131,7 +131,7 @@
         </layout>
        </widget>
       </widget>
-      <widget class="QWidget" name="tab_7">
+      <widget class="QWidget" name="whole_goc_tab">
        <attribute name="title">
         <string>Gravity of Center</string>
        </attribute>
@@ -306,7 +306,7 @@
         </layout>
        </widget>
       </widget>
-      <widget class="QWidget" name="tab_5">
+      <widget class="QWidget" name="whole_ch_tab">
        <attribute name="title">
         <string>Convex hull</string>
        </attribute>
@@ -506,7 +506,7 @@
         </property>
        </widget>
       </widget>
-      <widget class="QWidget" name="tab_6">
+      <widget class="QWidget" name="whole_histogram_tab">
        <attribute name="title">
         <string>Histogram</string>
        </attribute>
@@ -810,7 +810,7 @@
       </widget>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab_2">
+    <widget class="QWidget" name="radical_comparison_tab">
      <attribute name="title">
       <string>Radical Comparison</string>
      </attribute>
@@ -926,7 +926,7 @@
       </property>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab_3">
+    <widget class="QWidget" name="stroke_comparison_tab">
      <attribute name="title">
       <string>Stroke Comparison</string>
      </attribute>
@@ -962,7 +962,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QTabWidget" name="tabWidget_3">
+     <widget class="QTabWidget" name="stroke_main_tabwidget">
       <property name="geometry">
        <rect>
         <x>130</x>
@@ -974,7 +974,7 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
-      <widget class="QWidget" name="tab_8">
+      <widget class="QWidget" name="stroke_cr_tab">
        <attribute name="title">
         <string>Coverage Rate</string>
        </attribute>
@@ -1045,7 +1045,7 @@
         </layout>
        </widget>
       </widget>
-      <widget class="QWidget" name="tab_9">
+      <widget class="QWidget" name="stroke_segment_tab">
        <attribute name="title">
         <string>Segmentation</string>
        </attribute>

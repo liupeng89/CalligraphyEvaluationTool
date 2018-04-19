@@ -99,7 +99,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Chinese Calligraphy Segmentation Tool"))
         self.open_btn.setText(_translate("MainWindow", "Open"))
         self.grayscale_btn.setText(_translate("MainWindow", "Grayscale"))
         self.convert_btn.setText(_translate("MainWindow", "Convert"))

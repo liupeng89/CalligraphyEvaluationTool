@@ -19,6 +19,7 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
 
         # init GUI
         self.scene = GraphicsScene()
+        self.scene.setBackgroundBrush(Qt.gray)
         self.contour_gview.setScene(self.scene)
 
         self.image_pix = QPixmap()
@@ -26,7 +27,6 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
 
         self.contour_pix = QPixmap()
         self.temp_contour_pix = QPixmap()
-
 
         # data
         self.image_path = ""
@@ -38,7 +38,6 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
 
         self.image_gray = None
         self.contour_gray = None
-
 
         # add listener
         self.open_btn.clicked.connect(self.openBtn)
@@ -79,7 +78,7 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
             self.statusbar.showMessage("Open image %s successed!" % self.image_name)
 
             # clean
-            del img_
+            del img_, qimage
 
     def clearBtn(self):
         """
@@ -113,7 +112,7 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
         self.scene.addPixmap(self.contour_pix)
         self.scene.update()
         self.statusbar.showMessage("Contour successed!")
-        del contour_
+        del contour_, qimg
 
     def smoothBtn(self):
         """
@@ -127,8 +126,7 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
         max_error = int(self.maxerror_ledit.text())
 
         # new contour image
-        contour_img = np.ones_like(self.contour_gray) * 255
-        contour_img = np.array(contour_img, dtype=np.uint8)
+        contour_img = np.array(np.ones_like(self.contour_gray) * 255, dtype=np.uint8)
 
         # smooth the contour segmentations.
         contour_sorted = sortPointsOnContourOfImage(self.contour_gray.copy())
@@ -207,9 +205,8 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
 
         # update status bar
         self.statusbar.showMessage("Smooth successed!")
-
-        # del smoothed_contour_points
-        # del contour_img
+        del contour_img, contour_pix, contour_segmentations, contour_sorted, smoothed_contour_points, \
+            qimg, feature_points
 
     def autoSmoothBtn(self):
         """
