@@ -15,7 +15,7 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(20, 10, 201, 308))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(20, 10, 201, 333))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -44,6 +44,15 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3.addWidget(self.threshold_label)
         self.verticalLayout_3.addLayout(self.horizontalLayout_3)
         self.verticalLayout.addLayout(self.verticalLayout_3)
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.label_3 = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.label_3.setObjectName("label_3")
+        self.horizontalLayout_2.addWidget(self.label_3)
+        self.thre_width_ledit = QtWidgets.QLineEdit(self.verticalLayoutWidget)
+        self.thre_width_ledit.setObjectName("thre_width_ledit")
+        self.horizontalLayout_2.addWidget(self.thre_width_ledit)
+        self.verticalLayout.addLayout(self.horizontalLayout_2)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.label = QtWidgets.QLabel(self.verticalLayoutWidget)
@@ -99,11 +108,13 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "Chinese Calligraphy Segmentation Tool"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.open_btn.setText(_translate("MainWindow", "Open"))
         self.grayscale_btn.setText(_translate("MainWindow", "Grayscale"))
         self.convert_btn.setText(_translate("MainWindow", "Convert"))
         self.threshold_label.setText(_translate("MainWindow", "127"))
+        self.label_3.setText(_translate("MainWindow", "Threshold of \n"
+"Width:"))
         self.label.setText(_translate("MainWindow", "Threshold of \n"
 "Distance:"))
         self.segmentation_btn.setText(_translate("MainWindow", "Segmentation"))

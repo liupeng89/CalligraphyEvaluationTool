@@ -85,7 +85,7 @@
           <x>830</x>
           <y>90</y>
           <width>160</width>
-          <height>111</height>
+          <height>186</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -110,14 +110,21 @@
          <item>
           <widget class="QRadioButton" name="mizi_rbtn">
            <property name="text">
-            <string>Mizi</string>
+            <string>MiZi-Grid</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QRadioButton" name="jiugong_rbtn">
+          <widget class="QRadioButton" name="jingzi_rbtn">
            <property name="text">
-            <string>JiuGong</string>
+            <string>JingZi-Grid</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="net_rbtn">
+           <property name="text">
+            <string>20_Net-Grid</string>
            </property>
           </widget>
          </item>
@@ -237,13 +244,34 @@
        <widget class="QWidget" name="verticalLayoutWidget_3">
         <property name="geometry">
          <rect>
-          <x>470</x>
-          <y>570</y>
+          <x>460</x>
+          <y>520</y>
           <width>146</width>
-          <height>41</height>
+          <height>96</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
+         <item>
+          <widget class="QRadioButton" name="whole_cog_mizi_rbtn">
+           <property name="text">
+            <string>MiZi-Grid</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="whole_cog_jingzi_rbtn">
+           <property name="text">
+            <string>JingZi-Grid</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="whole_cog_net_rbtn">
+           <property name="text">
+            <string>20_Net-Grid</string>
+           </property>
+          </widget>
+         </item>
          <item>
           <widget class="QPushButton" name="cog_btn">
            <property name="text">
@@ -380,12 +408,33 @@
         <property name="geometry">
          <rect>
           <x>30</x>
-          <y>569</y>
+          <y>530</y>
           <width>160</width>
-          <height>32</height>
+          <height>96</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_4">
+         <item>
+          <widget class="QRadioButton" name="whole_ch_mizi_rbtn">
+           <property name="text">
+            <string>MiZi-Grid</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="whole_ch_jingzi_rbtn">
+           <property name="text">
+            <string>JingZi-Grid</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="whole_ch_net_rbtn">
+           <property name="text">
+            <string>20_Net-Grid</string>
+           </property>
+          </widget>
+         </item>
          <item>
           <widget class="QPushButton" name="convexhull_btn">
            <property name="text">
@@ -818,12 +867,33 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>20</y>
+        <y>50</y>
         <width>160</width>
-        <height>51</height>
+        <height>96</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_6">
+       <item>
+        <widget class="QRadioButton" name="radicals_jingzi_rbtn">
+         <property name="text">
+          <string>JingZi-Grid</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="radicals_mizi_rbtn">
+         <property name="text">
+          <string>MiZi-Grid</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="radicals_net_rbtn">
+         <property name="text">
+          <string>20_Net-Grid</string>
+         </property>
+        </widget>
+       </item>
        <item>
         <widget class="QPushButton" name="stroke_layout_btn">
          <property name="text">
@@ -1039,6 +1109,39 @@
           <widget class="QPushButton" name="strokes_cr_btn">
            <property name="text">
             <string>Calculate</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="verticalLayoutWidget_8">
+        <property name="geometry">
+         <rect>
+          <x>640</x>
+          <y>190</y>
+          <width>160</width>
+          <height>80</height>
+         </rect>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_8">
+         <item>
+          <widget class="QRadioButton" name="stroke_jingzi_rbtn">
+           <property name="text">
+            <string>JingZi-Grid</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="stroke_mizi_rbtn">
+           <property name="text">
+            <string>MiZi-Grid</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="stroke_net_rbtn">
+           <property name="text">
+            <string>20_Net-Grid</string>
            </property>
           </widget>
          </item>

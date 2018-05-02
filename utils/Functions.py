@@ -3,6 +3,7 @@ import math
 import numpy as np
 from math import sin, cos, sqrt
 from skimage.measure import compare_ssim as ssim
+from skimage.morphology import skeletonize
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -628,6 +629,21 @@ def getContourOfImage(image, minVal=100, maxVal=200):
     return edge
 
 
+def getSkeletonOfImage(image):
+    """
+    Get skeleton of grayscale image.
+    :param image:
+    :return:
+    """
+    if image is None:
+        return
+    img_bit = image != 255
+    skeleton = skeletonize(img_bit)
+    skeleton = (1 - skeleton) * 255
+    skeleton = np.array(skeleton, dtype=np.uint8)
+    return skeleton
+
+
 def removeBreakPointsOfContour(contour):
     """
     Remove the break points of contour to keep the contour close.
@@ -641,12 +657,10 @@ def removeBreakPointsOfContour(contour):
     for y in range(1, contour.shape[0]-1):
         for x in range(1, contour.shape[1]-1):
             if contour[y][x] == 0.0:
-
                 num_ = getNumberOfValidPixels(contour, x, y)
                 if num_ == 1:
                     # break points
                     break_points.append((x, y))
-    print("number of break points: %d" % len(break_points))
     if len(break_points) % 2 != 0:
         print("break points should be even number!")
     bp_label = []
@@ -683,41 +697,41 @@ def removeBreakPointsOfContour(contour):
 
 
 
-def getSkeletonOfImage(image, shape=cv2.MORPH_CROSS, kernel=(3, 3)):
-    """
-    Get the skeletion of grayscale image of character.
-    :param image: grayscale image of character.
-    :param shape: element shape that could be one of the following: MORPH_RECT, MORPH_ELLIPSE, MORPH_CROSS, and
-        CV_SHAPE_CUSTOM.
-    :param kernel: size of the structuring element.
-    :return: the skeleton grayscale image of character.
-    """
-    if image is None:
-        return None
-
-    # original image invert color
-    image = 255 - image
-
-    # skeleton
-    skel = np.zeros(image.shape, np.uint8)
-    size = np.size(image)
-
-    element = cv2.getStructuringElement(shape, kernel)
-    done = False
-
-    while (not done):
-        eroded = cv2.erode(image, element)
-        temp = cv2.dilate(eroded, element)
-        temp = cv2.subtract(image, temp)
-        skel = cv2.bitwise_or(skel, temp)
-        image = eroded.copy()
-
-        zeros = size - cv2.countNonZero(image)
-        if zeros == size:
-            done = True
-    # invert the color of skeleton image
-    skel = 255 - skel
-    return skel
+# def getSkeletonOfImage(image, shape=cv2.MORPH_CROSS, kernel=(3, 3)):
+#     """
+#     Get the skeletion of grayscale image of character.
+#     :param image: grayscale image of character.
+#     :param shape: element shape that could be one of the following: MORPH_RECT, MORPH_ELLIPSE, MORPH_CROSS, and
+#         CV_SHAPE_CUSTOM.
+#     :param kernel: size of the structuring element.
+#     :return: the skeleton grayscale image of character.
+#     """
+#     if image is None:
+#         return None
+#
+#     # original image invert color
+#     image = 255 - image
+#
+#     # skeleton
+#     skel = np.zeros(image.shape, np.uint8)
+#     size = np.size(image)
+#
+#     element = cv2.getStructuringElement(shape, kernel)
+#     done = False
+#
+#     while (not done):
+#         eroded = cv2.erode(image, element)
+#         temp = cv2.dilate(eroded, element)
+#         temp = cv2.subtract(image, temp)
+#         skel = cv2.bitwise_or(skel, temp)
+#         image = eroded.copy()
+#
+#         zeros = size - cv2.countNonZero(image)
+#         if zeros == size:
+#             done = True
+#     # invert the color of skeleton image
+#     skel = 255 - skel
+#     return skel
 
 
 def getNumberOfValidPixels(image, x, y):
@@ -809,7 +823,7 @@ def getCrossAreaPointsOfSkeletionLine(image):
                 # cross points
                 if black_num >= 3:
                     cross_points.append((x, y))
-    print("cross points len : %d" % len(cross_points))
+    # print("cross points len : %d" % len(cross_points))
     return cross_points
 
 
@@ -833,7 +847,6 @@ def getCrossPointsOfSkeletonLine(image):
                 # cross points
                 if black_num >= 3:
                     cross_points.append((x, y))
-    print("cross points len : %d" % len(cross_points))
 
     # remove the extra cross points and maintain the single cross point of several close points
     for (x, y) in cross_points:
@@ -852,7 +865,7 @@ def getCrossPointsOfSkeletonLine(image):
             black_num += 1
 
         if black_num == 2 or black_num == 3 or black_num == 4:
-            print(black_num)
+            # print(black_num)
             cross_points_no_extra.append((x, y))
 
         if (x, y) in cross_points and (x, y-1) not in cross_points and (x+1, y-1) not in cross_points and (x+1, y) not in \
@@ -861,6 +874,30 @@ def getCrossPointsOfSkeletonLine(image):
             cross_points_no_extra.append((x, y))
 
     return cross_points_no_extra
+
+
+def removeBranchOfSkeleton(image, distance_threshod=20):
+    """
+    Remove extra branches of skeleton image
+    :param image: skeleton grayscale image with 1-pixel width line
+    :return:
+    """
+    if image is None:
+        return
+    end_points = []
+    cross_points = []
+    for y in range(image.shape[0]):
+        for x in range(image.shape[1]):
+            if image[y][x] == 0:
+                num = getNumberOfValidPixels(image, x, y)
+                if num == 1:
+                    # end point
+                    end_points.append((x, y))
+                elif num >= 3:
+                    # cross point
+                    cross_points.append((x, y))
+
+
 
 
 def removeBranchOfSkeletonLine(image, end_points, cross_points, DIST_THRESHOLD=20):
@@ -882,9 +919,9 @@ def removeBranchOfSkeletonLine(image, end_points, cross_points, DIST_THRESHOLD=2
         for (e_x, e_y) in end_points:
             dist = math.sqrt((c_x-e_x) * (c_x-e_x) + (c_y-e_y) * (c_y-e_y))
             if dist < DIST_THRESHOLD:
-                print("%d %d %d %d " % (e_x, e_y, c_x, c_y))
+                # print("%d %d %d %d " % (e_x, e_y, c_x, c_y))
                 branch_points = getPointsOfExtraBranchOfSkeletonLine(image, e_x, e_y, c_x, c_y)
-                print("branch length: %d" % len(branch_points))
+                # print("branch length: %d" % len(branch_points))
 
                 # remove branch points
                 for (bx, by) in branch_points:
@@ -913,42 +950,42 @@ def getPointsOfExtraBranchOfSkeletonLine(image, start_x, start_y, end_x, end_y):
         if image[start_point[1]-1][start_point[0]] == 0.0 and (start_point[0], start_point[1]-1) not in \
                 extra_branch_points:
             next_point = (start_point[0], start_point[1]-1)
-            print(next_point)
+            # print(next_point)
         # P3
         if image[start_point[1]-1][start_point[0]+1] == 0.0 and (start_point[0]+1, start_point[1]-1) not in \
                 extra_branch_points:
             next_point = (start_point[0]+1, start_point[1]-1)
-            print(next_point)
+            # print(next_point)
         # P4
         if image[start_point[1]][start_point[0]+1] == 0.0 and (start_point[0]+1, start_point[1]) not in \
                 extra_branch_points:
             next_point = (start_point[0]+1, start_point[1])
-            print(next_point)
+            # print(next_point)
         # P5
         if image[start_point[1]+1][start_point[0]+1] == 0.0 and (start_point[0]+1, start_point[1]+1) not in \
                 extra_branch_points:
             next_point = (start_point[0]+1, start_point[1]+1)
-            print(next_point)
+            # print(next_point)
         # P6
         if image[start_point[1]+1][start_point[0]] == 0.0 and (start_point[0], start_point[1]+1) not in \
                 extra_branch_points:
             next_point = (start_point[0], start_point[1]+1)
-            print(next_point)
+            # print(next_point)
         # P7
         if image[start_point[1]+1][start_point[0]-1] == 0.0 and (start_point[0]-1, start_point[1]+1) not in \
                 extra_branch_points:
             next_point = (start_point[0]-1, start_point[1]+1)
-            print(next_point)
+            # print(next_point)
         # P8
         if image[start_point[1]][start_point[0]-1] == 0.0 and (start_point[0]-1, start_point[1]) not in \
                 extra_branch_points:
             next_point = (start_point[0]-1, start_point[1])
-            print(next_point)
+            # print(next_point)
         # P9
         if image[start_point[1]-1][start_point[0]-1] == 0.0 and (start_point[0]-1, start_point[1]-1) not in \
                 extra_branch_points:
             next_point = (start_point[0]-1, start_point[1]-1)
-            print(next_point)
+            # print(next_point)
 
         extra_branch_points.append(start_point)
 
@@ -1329,3 +1366,122 @@ def rgb2qimage(rgb):
     result = QImage(bgra.data, w, h, fmt)
     result.ndarray = bgra
     return result
+
+
+def addBackgroundImage(fore_rgb, back_rgb):
+    """
+    Adding background RGB image to foreground RGB image.
+    :param fore_rgb: calligraphy image (rbg) with back valid pixels and white background.
+    :param back_rgb:
+    :return:
+    """
+    if fore_rgb is None or back_rgb is None:
+        return
+
+    # two images should be same image size.
+    if fore_rgb.shape != back_rgb.shape:
+        print("foreground and backgorund images should be same size")
+        return
+    new_rgb = back_rgb.copy()
+
+    # rgb -> grayscale of foreground, 0 is black and 255 is white
+    fore_gray = cv2.cvtColor(fore_rgb, cv2.COLOR_RGB2GRAY)
+    fore_gray = np.array(fore_gray)
+
+    for y in range(fore_gray.shape[0]):
+        for x in range(fore_gray.shape[1]):
+            if fore_gray[y][x] != 255:
+                new_rgb[y][x] = fore_rgb[y][x]
+
+    return new_rgb
+
+
+def image_segment_with_net(image, n):
+    """
+    Segment RGB image with NxN horizontal lines and vertical lines.
+    :param image: RGB image
+    :param n:
+    :return:
+    """
+    if image is None:
+        print("image segment should not be none!")
+        return
+    if n == 0:
+        return image
+
+    # section range
+    w = image.shape[0];
+    h = image.shape[1]
+    sect_w = int(w / n)
+    sect_h = int(h / n)
+
+    if w - sect_w * n > n / 2.0:
+        sect_w += 1
+    if h - sect_h * n > n / 2.0:
+        sect_h += 1
+
+    for i in range(1, n):
+        cv2.line(image, (0, i * sect_w), (h - 1, i * sect_w), (0, 0, 255), 1)
+        cv2.line(image, (i * sect_h, 0), (i * sect_h, w - 1), (0, 0, 255), 1)
+
+    return image
+
+
+def createBackgound(size, type="mizi"):
+    """
+    Create background RGB image of different types(mizi, jingzi and net_20 grid), All border lines are red color, and 2
+    pixels width, and middle lines are red color and 1 pixel width.
+    :param fore_rgb: foreground RGB image
+    :param type: three different types: mizi-grid, jingzi-grid, and net_20 grid(20x20)
+    :return: background RGB image.
+    """
+    if size is None:
+        return
+    # background
+    back_gray = np.ones(size, dtype=np.uint8) * 255
+    back_rgb = cv2.cvtColor(back_gray, cv2.COLOR_GRAY2RGB)
+
+    # add border lines
+    back_rgb[0:2, ] = (0, 0, 255)
+    back_rgb[0:size[0], 0:2] = (0, 0, 255)
+    back_rgb[size[0] - 2:size[0], ] = (0, 0, 255)
+    back_rgb[0:size[1], size[1] - 2:size[1]] = (0, 0, 255)
+
+    # different background
+
+    if type == "mizi":
+        # MiZi grid
+        cv2.line(back_rgb, (0, 0), (size[0] - 1, size[1] - 1), (0, 0, 255), 1)
+        cv2.line(back_rgb, (0, size[1] - 1), (size[0] - 1, 0), (0, 0, 255), 1)
+
+        midd_w = int(size[0] / 2.)
+        midd_h = int(size[1] / 2.)
+
+        cv2.line(back_rgb, (0, midd_h), (size[0] - 1, midd_h), (0, 0, 255), 1)
+        cv2.line(back_rgb, (midd_w, 0), (midd_w, size[1] - 1), (0, 0, 255), 1)
+
+    elif type == "jingzi":
+        # JingZi grid
+        n = 3
+        back_rgb = image_segment_with_net(back_rgb, n)
+
+    elif type == "net_20":
+        n = 20
+        back_rgb = image_segment_with_net(back_rgb, n)
+
+    return back_rgb
+
+
+def min_distance_point2pointlist(point, points):
+    min_dist = 1000000000
+    if point is None or points is None:
+        return min_dist
+    for pt in points:
+        dist = math.sqrt((point[0]-pt[0])**2+(point[1]-pt[1])**2)
+        if dist < min_dist:
+            min_dist = dist
+    return min_dist
+
+
+
+

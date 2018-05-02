@@ -75,14 +75,13 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
             self.temp_image_pix = self.image_pix.copy()
 
             self.scene.addPixmap(self.image_pix)
-            self.scene.setSceneRect(QRectF())
-            self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+            # self.scene.setSceneRect(QRectF())
+            # self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
             self.scene.update()
 
             self.statusbar.showMessage("Open image: %s successed!" % self.image_name)
 
-            del img_rgb
-            del qimage
+            del img_rgb, qimage
 
     def grayscaleBtn(self):
         """
@@ -103,15 +102,13 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
-        self.scene.setSceneRect(QRectF())
-        self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+        # self.scene.setSceneRect(QRectF())
+        # self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
 
         self.statusbar.showMessage("Grayscale processing successed!")
 
-        del img_rgb
-        del img_gray
-        del qimg
+        del img_rgb, img_gray, qimg
 
     def convertBtn(self):
         """
@@ -132,14 +129,13 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
-        self.scene.setSceneRect(QRectF())
-        self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+        # self.scene.setSceneRect(QRectF())
+        # self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
 
         self.statusbar.showMessage("Conveting color processing successed!")
 
-        del img_gray
-        del qimg
+        del img_gray, qimg
 
     def binary_threshold_valuechange(self):
         """
@@ -164,15 +160,13 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
-        self.scene.setSceneRect(QRectF())
-        self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+        # self.scene.setSceneRect(QRectF())
+        # self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
 
         self.threshold_label.setText(str(binary_threshold))
 
-        del img_gray
-        del img_binary
-        del qimg
+        del img_gray, img_binary, qimg
 
     def segmentationBtn(self):
         """
@@ -189,13 +183,14 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
 
         # distance threshold
         dist_threshold = int(self.thre_dist_ledit.text())
+        width_threshold = int(self.thre_width_ledit.text())
 
         img_binary = self.image_binary.copy()
 
         boxes = getAllMiniBoundingBoxesOfImage(img_binary)
         boxes_ = []
         for box in boxes:
-            if box[2] < 5 or box[3] < 5:
+            if box[2] < width_threshold and box[3] < width_threshold:
                 continue
             boxes_.append(box)
 
@@ -340,19 +335,14 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
-        self.scene.setSceneRect(QRectF())
-        self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+        # self.scene.setSceneRect(QRectF())
+        # self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
 
         self.char_slm.setStringList(self.characters_name)
 
         self.statusbar.showMessage("Segmentation processing successed!")
-        del qimg
-        del img_rgb
-        del img_binary
-        del boxes_noinside
-        del boxes
-        del inside_id
+        del qimg, img_binary, img_rgb, boxes_noinside, boxes, inside_id
 
     def charsListView_clicked(self, qModelIndex):
         """
@@ -378,9 +368,7 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
 
-        del rect
-        del img_rect
-        del qimg
+        del rect, img_rect, qimg
 
     def extractBtn(self):
         """
@@ -408,8 +396,7 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
             cv2.imwrite(path, img_rect)
         self.statusbar.showMessage("Save characters successed!")
 
-        del rect
-        del img_rect
+        del rect, img_rect
 
     def exitBtn(self):
         """

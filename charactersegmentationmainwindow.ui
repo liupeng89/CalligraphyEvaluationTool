@@ -20,7 +20,7 @@
       <x>20</x>
       <y>10</y>
       <width>201</width>
-      <height>308</height>
+      <height>333</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
@@ -70,6 +70,21 @@
           </widget>
          </item>
         </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>Threshold of 
+Width:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="thre_width_ledit"/>
        </item>
       </layout>
      </item>

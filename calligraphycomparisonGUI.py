@@ -15,7 +15,8 @@ from matplotlib.figure import Figure
 from calligraphycomparisonmainwindow import Ui_MainWindow
 from utils.Functions import coverTwoImages, shiftImageWithMaxCR, addIntersectedFig, addSquaredFig, resizeImages, \
                             calculateCoverageRate, rgb2qimage, getCenterOfGravity, getConvexHullOfImage, \
-                            calculatePolygonArea, calculateValidPixelsArea, getSingleMaxBoundingBoxOfImage
+                            calculatePolygonArea, calculateValidPixelsArea, getSingleMaxBoundingBoxOfImage, \
+                            addBackgroundImage, createBackgound
 
 
 class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
@@ -52,6 +53,26 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
 
         self.original_image_gray = None
         self.target_image_gray = None
+
+        self.mizigridchecked = False
+        self.jingzigridchecked = False
+        self.net20gridchecked = False
+
+        self.whole_cover_img_rgb = None
+        self.whole_temp_goc_img_rgb = None
+        self.whole_targ_goc_img_rgb = None
+        self.whole_combine_goc_img_rgb = None
+
+        self.whole_temp_ch_img_rgb = None
+        self.whole_targ_ch_img_rgb = None
+
+        self.strokes_temp_layout_img_rgb = None
+        self.strokes_targ_layout_img_rgb = None
+
+        self.stroke_cover_img_rgb = None
+
+        self.current_tab_index = "whole_0"
+
 
         # scene
         self.template_scene = QGraphicsScene()
@@ -153,6 +174,25 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         self.comparison_main_tab.currentChanged.connect(self.radicalMainTabWidgetOnChange)
         self.stroke_main_tabwidget.currentChanged.connect(self.strokeMainTabWidgetOnChange)
 
+        self.mizi_rbtn.toggled.connect(self.miziGridStateChange)
+        self.jingzi_rbtn.toggled.connect(self.jingziGridStateChange)
+        self.net_rbtn.toggled.connect(self.net20GridStateChange)
+
+        self.whole_cog_mizi_rbtn.toggled.connect(self.miziGridStateChange)
+        self.whole_ch_mizi_rbtn.toggled.connect(self.miziGridStateChange)
+        self.radicals_mizi_rbtn.toggled.connect(self.miziGridStateChange)
+        self.stroke_mizi_rbtn.toggled.connect(self.miziGridStateChange)
+
+        self.whole_cog_jingzi_rbtn.toggled.connect(self.jingziGridStateChange)
+        self.whole_ch_jingzi_rbtn.toggled.connect(self.jingziGridStateChange)
+        self.radicals_jingzi_rbtn.toggled.connect(self.jingziGridStateChange)
+        self.stroke_jingzi_rbtn.toggled.connect(self.jingziGridStateChange)
+
+        self.whole_cog_net_rbtn.toggled.connect(self.net20GridStateChange)
+        self.whole_ch_net_rbtn.toggled.connect(self.net20GridStateChange)
+        self.radicals_net_rbtn.toggled.connect(self.net20GridStateChange)
+        self.stroke_net_rbtn.toggled.connect(self.net20GridStateChange)
+
     def openTemplatesBtn(self):
         """
         Open template button.
@@ -202,11 +242,7 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
 
             # show original rgb image of template
             self.template_image_pix = QPixmap.fromImage(qimage)
-            self.template_scene.addPixmap(self.template_image_pix)
-            # fit image in gview with fitting size
-            self.template_scene.setSceneRect(QRectF())
-            self.template_gview.fitInView(self.template_scene.sceneRect(), Qt.KeepAspectRatio)
-            self.template_scene.update()
+            self.sceneUpdate(self.template_gview, self.template_scene, self.template_image_pix)
 
             self.statusbar.showMessage("Open template file: %s successed!" % self.template_image_name)
 
@@ -273,10 +309,7 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
 
             # show original rgb image of template
             target_image_pix = QPixmap.fromImage(qimage)
-            self.target_scene.addPixmap(target_image_pix)
-            self.target_scene.setSceneRect(QRectF())
-            self.target_gview.fitInView(self.target_scene.sceneRect(), Qt.KeepAspectRatio)
-            self.target_scene.update()
+            self.sceneUpdate(self.target_gview, self.target_scene, target_image_pix)
 
             self.statusbar.showMessage("Open template file: %s successed!" % self.target_image_name)
 
@@ -311,12 +344,11 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         cover_image_rgb = np.array(cover_image_rgb)
         qimg = rgb2qimage(cover_image_rgb)
         image_pix = QPixmap.fromImage(qimg)
-
-        self.cover_scene.addPixmap(image_pix)
-        self.cover_scene.setSceneRect(QRectF())
-        self.cover_gview.fitInView(self.cover_scene.sceneRect(), Qt.KeepAspectRatio)
-        self.cover_scene.update()
         self.whole_cr_pix = image_pix.copy()
+        self.whole_cover_img_rgb = cover_image_rgb.copy()
+
+        self.sceneUpdate(self.cover_gview, self.cover_scene, image_pix)
+
         self.statusbar.showMessage("Cover images successed!")
 
         del template_gray, target_gray, new_target_gray, cover_image_rgb, image_pix
@@ -353,23 +385,20 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
 
         # display template rgb image with center of gravity
         template_img_rgb = np.array(template_img_rgb)
+        self.whole_temp_goc_img_rgb = template_img_rgb.copy()
         temp_qimg = rgb2qimage(template_img_rgb)
         temp_pix = QPixmap.fromImage(temp_qimg)
-        self.template_cog_scene.addPixmap(temp_pix)
-        self.template_cog_scene.setSceneRect(QRectF())
-        self.cog_template_gview.fitInView(self.template_cog_scene.sceneRect(), Qt.KeepAspectRatio)
-        self.template_cog_scene.update()
         self.whole_temp_goc_pix = temp_pix.copy()
+        self.sceneUpdate(self.cog_template_gview, self.template_cog_scene, temp_pix)
 
         # display target rgb image with center of gravity
         target_img_rgb = np.array(target_img_rgb)
+        self.whole_targ_goc_img_rgb = target_img_rgb.copy()
         target_qimg = rgb2qimage(target_img_rgb)
         target_pix = QPixmap.fromImage(target_qimg)
-        self.target_cog_scene.addPixmap(target_pix)
-        self.target_cog_scene.setSceneRect(QRectF())
-        self.cog_target_gview.fitInView(self.target_cog_scene.sceneRect(), Qt.KeepAspectRatio)
-        self.target_cog_scene.update()
+
         self.whole_targ_goc_pix = target_pix.copy()
+        self.sceneUpdate(self.cog_target_gview, self.target_cog_scene, target_pix)
 
         # combine two center of gravity between two images.
         print(template_img_gray.shape)
@@ -384,14 +413,11 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         combine_rgb = cv2.circle(combine_rgb, (tar_cog_y, tar_cog_x), 4, (255, 0, 0), -1)
 
         combine_rgb = np.array(combine_rgb)
+        self.whole_combine_goc_img_rgb = combine_rgb.copy()
         combine_qimg = rgb2qimage(combine_rgb)
         combine_pix = QPixmap.fromImage(combine_qimg)
-
-        self.cog_comparison_scene.addPixmap(combine_pix)
-        self.cog_comparison_scene.setSceneRect(QRectF())
-        self.cog_comparison_gview.fitInView(self.cog_comparison_scene.sceneRect(), Qt.KeepAspectRatio)
-        self.cog_comparison_scene.update()
         self.whole_combine_goc_pix = combine_pix.copy()
+        self.sceneUpdate(self.cog_comparison_gview, self.cog_comparison_scene, combine_pix)
 
         # update cog labels
         self.template_cog_label.setText("(%d, %d)" % (temp_cog_x, temp_cog_y))
@@ -418,6 +444,9 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         template_img_gray = self.template_image_gray.copy()
         target_img_gray = self.target_image_gray.copy()
 
+        temp_rect_x, temp_rect_y, temp_rect_w, temp_rect_h = getSingleMaxBoundingBoxOfImage(template_img_gray)
+        targ_rect_x, targ_rect_y, targ_rect_w, targ_rect_h = getSingleMaxBoundingBoxOfImage(target_img_gray)
+
         template_img_gray = np.array(template_img_gray, dtype=np.uint8)
         target_img_gray = np.array(target_img_gray, dtype=np.uint8)
         print(template_img_gray.shape)
@@ -428,23 +457,29 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         template_img_rgb = cv2.cvtColor(template_img_gray, cv2.COLOR_GRAY2RGB)
         target_img_rgb = cv2.cvtColor(target_img_gray, cv2.COLOR_GRAY2RGB)
 
+        # add mini-bounding box to rgb images
+        cv2.rectangle(template_img_rgb, (temp_rect_x, temp_rect_y), (temp_rect_x+temp_rect_w, temp_rect_y+temp_rect_h),\
+                      (0, 255, 0), 1)
+        cv2.rectangle(target_img_rgb, (targ_rect_x, targ_rect_y), (targ_rect_x+targ_rect_w, targ_rect_y+targ_rect_h), \
+                      (0, 255, 0), 1)
+
         # add convex hull to template RGB image
         for idx in range(len(template_l)):
             if idx+1 == len(template_l):
-                template_img_rgb = cv2.line(template_img_rgb, (template_l[idx][0], template_l[idx][1]), \
-                                            (template_l[0][0], template_l[0][1]), (0, 0, 255), 2)
+                cv2.line(template_img_rgb, (template_l[idx][0], template_l[idx][1]), \
+                                            (template_l[0][0], template_l[0][1]), (0, 0, 255), 1)
             else:
-                template_img_rgb = cv2.line(template_img_rgb, (template_l[idx][0], template_l[idx][1]), \
-                                            (template_l[idx+1][0], template_l[idx+1][1]), (0, 0, 255), 2)
+                cv2.line(template_img_rgb, (template_l[idx][0], template_l[idx][1]), \
+                                            (template_l[idx+1][0], template_l[idx+1][1]), (0, 0, 255), 1)
 
         # add convex hull to target RGB image
         for idx in range(len(target_l)):
             if idx+1 == len(target_l):
-                target_img_rgb = cv2.line(target_img_rgb, (target_l[idx][0], target_l[idx][1]), \
-                                          (target_l[0][0], target_l[0][1]), (0, 0, 255), 2)
+                cv2.line(target_img_rgb, (target_l[idx][0], target_l[idx][1]), \
+                                          (target_l[0][0], target_l[0][1]), (0, 0, 255), 1)
             else:
-                target_img_rgb = cv2.line(target_img_rgb, (target_l[idx][0], target_l[idx][1]), \
-                                          (target_l[idx+1][0], target_l[idx+1][1]), (0, 0, 255), 2)
+                cv2.line(target_img_rgb, (target_l[idx][0], target_l[idx][1]), \
+                                          (target_l[idx+1][0], target_l[idx+1][1]), (0, 0, 255), 1)
         # template convex hull area
         temp_convexhull_area = calculatePolygonArea(template_l)
         targ_convexhull_area = calculatePolygonArea(target_l)
@@ -469,24 +504,20 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
 
         # display RGB images
         template_img_rgb = np.array(template_img_rgb)
+        self.whole_temp_ch_img_rgb = template_img_rgb.copy()
         temp_qimg = rgb2qimage(template_img_rgb)
         temp_pix = QPixmap.fromImage(temp_qimg)
 
-        self.template_ch_scene.addPixmap(temp_pix)
-        self.template_ch_scene.setSceneRect(QRectF())
-        self.template_ch_gview.fitInView(self.template_ch_scene.sceneRect(), Qt.KeepAspectRatio)
-        self.template_ch_scene.update()
         self.whole_temp_ch_pix = temp_pix.copy()
+        self.sceneUpdate(self.template_ch_gview, self.template_ch_scene, temp_pix)
 
         target_img_rgb = np.array(target_img_rgb)
+        self.whole_targ_ch_img_rgb = target_img_rgb.copy()
         targ_qimg = rgb2qimage(target_img_rgb)
         targ_pix = QPixmap.fromImage(targ_qimg)
 
-        self.target_ch_scene.addPixmap(targ_pix)
-        self.target_ch_scene.setSceneRect(QRectF())
-        self.target_ch_gview.fitInView(self.target_ch_scene.sceneRect(), Qt.KeepAspectRatio)
-        self.target_ch_scene.update()
         self.whole_targ_ch_pix = targ_pix.copy()
+        self.sceneUpdate(self.target_ch_gview, self.target_ch_scene, targ_pix)
 
         self.statusbar.showMessage("Convex hull successed!")
 
@@ -606,6 +637,7 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
             elif idx % 3 == 2:
                 rect_color = (255, 0, 0)
             cv2.rectangle(temp_img_rgb, (rt[0], rt[1]), (rt[0] + rt[2], rt[1] + rt[3]), rect_color, 1)
+            cv2.circle(temp_img_rgb, (int(rt[0]+rt[2]/2.), int(rt[1]+rt[3]/2.)), 3, (0, 255, 0), 3)
 
         for idx in range(len(targ_strokes_rect)):
             rect_color = None
@@ -617,27 +649,24 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
             elif idx % 3 == 2:
                 rect_color = (255, 0, 0)
             cv2.rectangle(targ_img_rgb, (rt[0], rt[1]), (rt[0] + rt[2], rt[1] + rt[3]), rect_color, 1)
+            cv2.circle(targ_img_rgb, (int(rt[0] + rt[2] / 2.), int(rt[1] + rt[3] / 2.)), 3, (0, 255, 0), 3)
         # show image on gview
         temp_img_rgb = np.array(temp_img_rgb)
         targ_img_rgb = np.array(targ_img_rgb)
+
+        self.strokes_temp_layout_img_rgb = temp_img_rgb.copy()
+        self.strokes_targ_layout_img_rgb = targ_img_rgb.copy()
 
         temp_qimg = rgb2qimage(temp_img_rgb)
         targ_qimg = rgb2qimage(targ_img_rgb)
 
         temp_pix = QPixmap.fromImage(temp_qimg)
         targ_pix = QPixmap.fromImage(targ_qimg)
-
-        self.template_strokes_layout_scene.addPixmap(temp_pix)
-        self.template_strokes_layout_scene.setSceneRect(QRectF())
-        self.template_strokes_layout_gview.fitInView(self.template_strokes_layout_scene.sceneRect(), Qt.KeepAspectRatio)
-        self.template_strokes_layout_scene.update()
         self.radical_temp_layout_pix = temp_pix.copy()
+        self.sceneUpdate(self.template_strokes_layout_gview, self.template_strokes_layout_scene, temp_pix)
 
-        self.target_strokes_layout_scene.addPixmap(targ_pix)
-        self.target_strokes_layout_scene.setSceneRect(QRectF())
-        self.target_strokes_layout_gview.fitInView(self.target_strokes_layout_scene.sceneRect(), Qt.KeepAspectRatio)
-        self.target_strokes_layout_scene.update()
         self.radical_targ_layout_pix = targ_pix.copy()
+        self.sceneUpdate(self.target_strokes_layout_gview, self.target_strokes_layout_scene, targ_pix)
 
         self.statusbar.showMessage("Stroke layout successed!")
 
@@ -682,14 +711,14 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         # cover two image in one RGB image
         cr_rgb = coverTwoImages(temp_img_gray, targ_img_gray)
 
+        self.stroke_cover_img_rgb = cr_rgb.copy()
+
         # display RGB image
         cr_rgb_qimg = rgb2qimage(cr_rgb)
         cr_rgb_pix = QPixmap.fromImage(cr_rgb_qimg)
-        self.strokes_cr_scene.addPixmap(cr_rgb_pix)
-        self.strokes_cr_scene.setSceneRect(QRectF())
-        self.strokes_cr_gview.fitInView(self.strokes_cr_scene.sceneRect(), Qt.KeepAspectRatio)
-        self.strokes_cr_scene.update()
+
         self.stroke_cr_pix = cr_rgb_pix.copy()
+        self.sceneUpdate(self.strokes_cr_gview, self.strokes_cr_scene, cr_rgb_pix)
 
         self.statusbar.showMessage("Stroke cr successed!")
 
@@ -700,72 +729,504 @@ class CalligraphyComparisonGUI(QMainWindow, Ui_MainWindow):
         qApp = QApplication.instance()
         sys.exit(qApp.exec_())
 
+    def sceneUpdate(self, gview, scene, pixmap):
+        if gview is None or scene is None or pixmap is None:
+            return
+        scene.addPixmap(pixmap)
+        scene.setSceneRect(QRectF())
+        gview.fitInView(scene.sceneRect(), Qt.KeepAspectRatio)
+        scene.update()
+
     def wholeMainTabWidgetOnChange(self, i):
         print("whole tab index: %d" % i)
 
         if i == 0:
             # whole cr tab click
             if self.whole_cr_pix:
-                self.cover_scene.addPixmap(self.whole_cr_pix)
-                self.cover_scene.setSceneRect(QRectF())
-                self.cover_gview.fitInView(self.cover_scene.sceneRect(), Qt.KeepAspectRatio)
-                self.cover_scene.update()
+                self.sceneUpdate(self.cover_gview, self.cover_scene, self.whole_cr_pix)
+            # set current tab index
+            self.current_tab_index = "whole_0"
         elif i == 1:
             # whole goc tab click
             if self.whole_temp_goc_pix and self.whole_targ_goc_pix and self.whole_combine_goc_pix:
-                self.template_cog_scene.addPixmap(self.whole_temp_goc_pix)
-                self.template_cog_scene.setSceneRect(QRectF())
-                self.cog_template_gview.fitInView(self.template_cog_scene.sceneRect(), Qt.KeepAspectRatio)
-                self.template_cog_scene.update()
-
-                self.target_cog_scene.addPixmap(self.whole_targ_goc_pix)
-                self.target_cog_scene.setSceneRect(QRectF())
-                self.cog_target_gview.fitInView(self.target_cog_scene.sceneRect(), Qt.KeepAspectRatio)
-                self.target_cog_scene.update()
-
-                self.cog_comparison_scene.addPixmap(self.whole_combine_goc_pix)
-                self.cog_comparison_scene.setSceneRect(QRectF())
-                self.cog_comparison_gview.fitInView(self.cog_comparison_scene.sceneRect(), Qt.KeepAspectRatio)
-                self.cog_comparison_scene.update()
+                self.sceneUpdate(self.cog_template_gview, self.template_cog_scene, self.whole_temp_goc_pix)
+                self.sceneUpdate(self.cog_target_gview, self.target_cog_scene, self.whole_targ_goc_pix)
+                self.sceneUpdate(self.cog_comparison_gview, self.cog_comparison_scene, self.whole_combine_goc_pix)
+            # set current tab index
+            self.current_tab_index = "whole_1"
         elif i == 2:
             # whole ch tab click
             if self.whole_temp_ch_pix and self.whole_targ_ch_pix:
-                self.template_ch_scene.addPixmap(self.whole_temp_ch_pix)
-                self.template_ch_scene.setSceneRect(QRectF())
-                self.template_ch_gview.fitInView(self.template_ch_scene.sceneRect(), Qt.KeepAspectRatio)
-                self.template_ch_scene.update()
-
-                self.target_ch_scene.addPixmap(self.whole_targ_ch_pix)
-                self.target_ch_scene.setSceneRect(QRectF())
-                self.target_ch_gview.fitInView(self.target_ch_scene.sceneRect(), Qt.KeepAspectRatio)
-                self.target_ch_scene.update()
+                self.sceneUpdate(self.template_ch_gview, self.template_ch_scene, self.whole_temp_ch_pix)
+                self.sceneUpdate(self.target_ch_gview, self.target_ch_scene, self.whole_targ_ch_pix)
+            self.current_tab_index = "whole_2"
 
     def radicalMainTabWidgetOnChange(self, i):
         print("radical tab index: %d" % i)
         if i == 1:
             # radical layout comparison
             if self.radical_temp_layout_pix and self.radical_targ_layout_pix:
-                self.template_strokes_layout_scene.addPixmap(self.radical_temp_layout_pix)
-                self.template_strokes_layout_scene.setSceneRect(QRectF())
-                self.template_strokes_layout_gview.fitInView(self.template_strokes_layout_scene.sceneRect(),
-                                                             Qt.KeepAspectRatio)
-                self.template_strokes_layout_scene.update()
 
-                self.target_strokes_layout_scene.addPixmap(self.radical_targ_layout_pix)
-                self.target_strokes_layout_scene.setSceneRect(QRectF())
-                self.target_strokes_layout_gview.fitInView(self.target_strokes_layout_scene.sceneRect(),
-                                                           Qt.KeepAspectRatio)
-                self.target_strokes_layout_scene.update()
+                self.sceneUpdate(self.template_strokes_layout_gview, self.template_strokes_layout_scene, \
+                                 self.radical_temp_layout_pix)
+                self.sceneUpdate(self.target_strokes_layout_gview, self.target_strokes_layout_scene, \
+                                 self.radical_targ_layout_pix)
+            self.current_tab_index = "radicals_1"
 
     def strokeMainTabWidgetOnChange(self, i):
         print("stroke tab index: %d" % i)
         if i == 0:
             # stroke cr
             if self.stroke_cr_pix:
-                self.strokes_cr_scene.addPixmap(self.stroke_cr_pix)
-                self.strokes_cr_scene.setSceneRect(QRectF())
-                self.strokes_cr_gview.fitInView(self.strokes_cr_scene.sceneRect(), Qt.KeepAspectRatio)
-                self.strokes_cr_scene.update()
+                self.sceneUpdate(self.strokes_cr_gview, self.strokes_cr_scene, self.stroke_cr_pix)
+            self.current_tab_index = "stroke_0"
+
+    def miziGridStateChange(self, btn):
+        """
+        Adding MiZi grid background to RGB image.
+        :param btn:
+        :return:
+        """
+        if self.current_tab_index == "":
+            return
+        elif self.current_tab_index == "whole_0":
+            if self.whole_cover_img_rgb is None:
+                return
+            fore_img = self.whole_cover_img_rgb.copy()
+            size = (fore_img.shape[0], fore_img.shape[1])
+
+            back_img = createBackgound(size)
+            back_img = np.array(back_img, dtype=np.uint8)
+            fore_img = np.array(fore_img, dtype=np.uint8)
+
+            combine_img = addBackgroundImage(fore_img, back_img)
+            qimg = rgb2qimage(combine_img)
+
+            pix = QPixmap.fromImage(qimg)
+            self.whole_cr_pix = pix.copy()
+            self.sceneUpdate(self.cover_gview, self.cover_scene, self.whole_cr_pix)
+            del fore_img, back_img, combine_img, qimg, pix
+
+        elif self.current_tab_index == "whole_1":
+            if self.whole_temp_goc_img_rgb is None or self.whole_targ_goc_img_rgb is None or \
+                    self.whole_combine_goc_img_rgb is None:
+                return
+            temp_fore_img = self.whole_temp_goc_img_rgb.copy()
+            targ_fore_img = self.whole_targ_goc_img_rgb.copy()
+            combine_fore_img = self.whole_combine_goc_img_rgb.copy()
+
+            size = (temp_fore_img.shape[0], temp_fore_img.shape[1])
+            back_img = createBackgound(size)
+            back_img = np.array(back_img, dtype=np.uint8)
+            temp_fore_img = np.array(temp_fore_img, dtype=np.uint8)
+            targ_fore_img = np.array(targ_fore_img, dtype=np.uint8)
+            combine_fore_img = np.array(combine_fore_img, dtype=np.uint8)
+
+            # add background
+            temp_fore_img = addBackgroundImage(temp_fore_img, back_img)
+            targ_fore_img = addBackgroundImage(targ_fore_img, back_img)
+            combine_fore_img = addBackgroundImage(combine_fore_img, back_img)
+
+            # temp
+            temp_qimg = rgb2qimage(temp_fore_img)
+            targ_qimg = rgb2qimage(targ_fore_img)
+            combine_qimg = rgb2qimage(combine_fore_img)
+
+            temp_pix = QPixmap.fromImage(temp_qimg)
+            targ_pix = QPixmap.fromImage(targ_qimg)
+            combine_pix = QPixmap.fromImage(combine_qimg)
+
+            # update scene
+            self.whole_temp_goc_pix = temp_pix.copy()
+            self.sceneUpdate(self.cog_template_gview, self.template_cog_scene, temp_pix)
+            self.whole_targ_goc_pix = targ_pix.copy()
+            self.sceneUpdate(self.cog_target_gview, self.target_cog_scene, targ_pix)
+            self.whole_combine_goc_pix = combine_pix.copy()
+            self.sceneUpdate(self.cog_comparison_gview, self.cog_comparison_scene, combine_pix)
+            del temp_fore_img, temp_qimg, temp_pix, targ_fore_img, targ_qimg, targ_pix, combine_fore_img, \
+                combine_qimg, combine_pix
+
+        elif self.current_tab_index == "whole_2":
+            if self.whole_temp_ch_img_rgb is None or self.whole_targ_ch_img_rgb is None:
+                return
+            temp_fore_img = self.whole_temp_ch_img_rgb.copy()
+            targ_fore_img = self.whole_targ_ch_img_rgb.copy()
+
+            size = (temp_fore_img.shape[0], temp_fore_img.shape[1])
+            back_img = createBackgound(size)
+            back_img = np.array(back_img, dtype=np.uint8)
+
+            temp_fore_img = np.array(temp_fore_img, dtype=np.uint8)
+            targ_fore_img = np.array(targ_fore_img, dtype=np.uint8)
+
+            #add background
+            temp_fore_img = addBackgroundImage(temp_fore_img, back_img)
+            targ_fore_img = addBackgroundImage(targ_fore_img, back_img)
+
+            # temp and targ
+            temp_qimg = rgb2qimage(temp_fore_img)
+            targ_qimg = rgb2qimage(targ_fore_img)
+
+            temp_pix = QPixmap.fromImage(temp_qimg)
+            targ_pix = QPixmap.fromImage(targ_qimg)
+
+            # update scene
+            self.whole_temp_ch_pix = temp_pix.copy()
+            self.sceneUpdate(self.template_ch_gview, self.template_ch_scene, temp_pix)
+            self.whole_targ_ch_pix = targ_pix.copy()
+            self.sceneUpdate(self.target_ch_gview, self.target_ch_scene, targ_pix)
+
+            del temp_fore_img, temp_qimg, temp_pix, targ_fore_img, targ_qimg, targ_pix
+
+        elif self.current_tab_index == "radicals_1":
+            if self.strokes_temp_layout_img_rgb is None or self.strokes_targ_layout_img_rgb is None:
+                return
+            temp_fore_img = self.strokes_temp_layout_img_rgb.copy()
+            targ_fore_img = self.strokes_targ_layout_img_rgb.copy()
+            temp_fore_img = np.array(temp_fore_img, dtype=np.uint8)
+            targ_fore_img = np.array(targ_fore_img, dtype=np.uint8)
+
+            temp_size = (temp_fore_img.shape[0], temp_fore_img.shape[1])
+            targ_size = (targ_fore_img.shape[0], targ_fore_img.shape[1])
+
+            temp_back_img = createBackgound(temp_size)
+            targ_back_img = createBackgound(targ_size)
+
+            temp_back_img = np.array(temp_back_img, dtype=np.uint8)
+            targ_back_img = np.array(targ_back_img, dtype=np.uint8)
+
+            # add background
+            temp_fore_img = addBackgroundImage(temp_fore_img, temp_back_img)
+            targ_fore_img = addBackgroundImage(targ_fore_img, targ_back_img)
+
+            # temp and targ qimg
+            temp_qimg = rgb2qimage(temp_fore_img)
+            targ_qimg = rgb2qimage(targ_fore_img)
+            temp_pix = QPixmap.fromImage(temp_qimg)
+            targ_pix = QPixmap.fromImage(targ_qimg)
+
+            # update scene
+            self.radical_temp_layout_pix = temp_pix.copy()
+            self.sceneUpdate(self.template_strokes_layout_gview, self.template_strokes_layout_scene, temp_pix)
+            self.radical_targ_layout_pix = targ_pix.copy()
+            self.sceneUpdate(self.target_strokes_layout_gview, self.target_strokes_layout_scene, targ_pix)
+            del temp_fore_img, temp_back_img, temp_qimg, temp_pix, targ_fore_img, targ_back_img, targ_qimg, targ_pix
+
+        elif self.current_tab_index == "stroke_0":
+            if self.stroke_cover_img_rgb is None:
+                return
+            fore_img = self.stroke_cover_img_rgb.copy()
+            fore_img = np.array(fore_img, dtype=np.uint8)
+            size = (fore_img.shape[0], fore_img.shape[1])
+            back_img = createBackgound(size)
+            back_img = np.array(back_img, dtype=np.uint8)
+
+            # add background
+            fore_img = addBackgroundImage(fore_img, back_img)
+            qimg = rgb2qimage(fore_img)
+            pix = QPixmap.fromImage(qimg)
+
+            self.stroke_cr_pix = pix.copy()
+            self.sceneUpdate(self.strokes_cr_gview, self.strokes_cr_scene, pix)
+            del fore_img, back_img, qimg, pix
+
+    def jingziGridStateChange(self, btn):
+        """
+        Addimg JingZi grid background to RGB image.
+        :param btn:
+        :return:
+        """
+        if self.current_tab_index == "":
+            return
+        elif self.current_tab_index == "whole_0":
+            if self.whole_cover_img_rgb is None:
+                return
+            fore_img = self.whole_cover_img_rgb.copy()
+            size = (fore_img.shape[0], fore_img.shape[1])
+
+            back_img = createBackgound(size, type="jingzi")
+            back_img = np.array(back_img, dtype=np.uint8)
+            fore_img = np.array(fore_img, dtype=np.uint8)
+
+            combine_img = addBackgroundImage(fore_img, back_img)
+            qimg = rgb2qimage(combine_img)
+
+            pix = QPixmap.fromImage(qimg)
+            self.whole_cr_pix = pix.copy()
+            self.sceneUpdate(self.cover_gview, self.cover_scene, self.whole_cr_pix)
+            del fore_img, back_img, combine_img, qimg, pix
+
+        elif self.current_tab_index == "whole_1":
+            if self.whole_temp_goc_img_rgb is None or self.whole_targ_goc_img_rgb is None or \
+                    self.whole_combine_goc_img_rgb is None:
+                return
+            temp_fore_img = self.whole_temp_goc_img_rgb.copy()
+            targ_fore_img = self.whole_targ_goc_img_rgb.copy()
+            combine_fore_img = self.whole_combine_goc_img_rgb.copy()
+
+            size = (temp_fore_img.shape[0], temp_fore_img.shape[1])
+            back_img = createBackgound(size, type="jingzi")
+            back_img = np.array(back_img, dtype=np.uint8)
+            temp_fore_img = np.array(temp_fore_img, dtype=np.uint8)
+            targ_fore_img = np.array(targ_fore_img, dtype=np.uint8)
+            combine_fore_img = np.array(combine_fore_img, dtype=np.uint8)
+
+            # add background
+            temp_fore_img = addBackgroundImage(temp_fore_img, back_img)
+            targ_fore_img = addBackgroundImage(targ_fore_img, back_img)
+            combine_fore_img = addBackgroundImage(combine_fore_img, back_img)
+
+            # temp
+            temp_qimg = rgb2qimage(temp_fore_img)
+            targ_qimg = rgb2qimage(targ_fore_img)
+            combine_qimg = rgb2qimage(combine_fore_img)
+
+            temp_pix = QPixmap.fromImage(temp_qimg)
+            targ_pix = QPixmap.fromImage(targ_qimg)
+            combine_pix = QPixmap.fromImage(combine_qimg)
+
+            # update scene
+            self.whole_temp_goc_pix = temp_pix.copy()
+            self.sceneUpdate(self.cog_template_gview, self.template_cog_scene, temp_pix)
+            self.whole_targ_goc_pix = targ_pix.copy()
+            self.sceneUpdate(self.cog_target_gview, self.target_cog_scene, targ_pix)
+            self.whole_combine_goc_pix = combine_pix.copy()
+            self.sceneUpdate(self.cog_comparison_gview, self.cog_comparison_scene, combine_pix)
+            del temp_fore_img, temp_qimg, temp_pix, targ_fore_img, targ_qimg, targ_pix, combine_fore_img, \
+                combine_qimg, combine_pix
+
+        elif self.current_tab_index == "whole_2":
+            if self.whole_temp_ch_img_rgb is None or self.whole_targ_ch_img_rgb is None:
+                return
+            temp_fore_img = self.whole_temp_ch_img_rgb.copy()
+            targ_fore_img = self.whole_targ_ch_img_rgb.copy()
+
+            size = (temp_fore_img.shape[0], temp_fore_img.shape[1])
+            back_img = createBackgound(size, type="jingzi")
+            back_img = np.array(back_img, dtype=np.uint8)
+
+            temp_fore_img = np.array(temp_fore_img, dtype=np.uint8)
+            targ_fore_img = np.array(targ_fore_img, dtype=np.uint8)
+
+            #add background
+            temp_fore_img = addBackgroundImage(temp_fore_img, back_img)
+            targ_fore_img = addBackgroundImage(targ_fore_img, back_img)
+
+            # temp and targ
+            temp_qimg = rgb2qimage(temp_fore_img)
+            targ_qimg = rgb2qimage(targ_fore_img)
+
+            temp_pix = QPixmap.fromImage(temp_qimg)
+            targ_pix = QPixmap.fromImage(targ_qimg)
+
+            # update scene
+            self.whole_temp_ch_pix = temp_pix.copy()
+            self.sceneUpdate(self.template_ch_gview, self.template_ch_scene, temp_pix)
+            self.whole_targ_ch_pix = targ_pix.copy()
+            self.sceneUpdate(self.target_ch_gview, self.target_ch_scene, targ_pix)
+
+            del temp_fore_img, temp_qimg, temp_pix, targ_fore_img, targ_qimg, targ_pix
+
+        elif self.current_tab_index == "radicals_1":
+            if self.strokes_temp_layout_img_rgb is None or self.strokes_targ_layout_img_rgb is None:
+                return
+            temp_fore_img = self.strokes_temp_layout_img_rgb.copy()
+            targ_fore_img = self.strokes_targ_layout_img_rgb.copy()
+            temp_fore_img = np.array(temp_fore_img, dtype=np.uint8)
+            targ_fore_img = np.array(targ_fore_img, dtype=np.uint8)
+
+            temp_size = (temp_fore_img.shape[0], temp_fore_img.shape[1])
+            targ_size = (targ_fore_img.shape[0], targ_fore_img.shape[1])
+
+            temp_back_img = createBackgound(temp_size, type="jingzi")
+            targ_back_img = createBackgound(targ_size, type="jingzi")
+
+            temp_back_img = np.array(temp_back_img, dtype=np.uint8)
+            targ_back_img = np.array(targ_back_img, dtype=np.uint8)
+
+            # add background
+            temp_fore_img = addBackgroundImage(temp_fore_img, temp_back_img)
+            targ_fore_img = addBackgroundImage(targ_fore_img, targ_back_img)
+
+            # temp and targ qimg
+            temp_qimg = rgb2qimage(temp_fore_img)
+            targ_qimg = rgb2qimage(targ_fore_img)
+            temp_pix = QPixmap.fromImage(temp_qimg)
+            targ_pix = QPixmap.fromImage(targ_qimg)
+
+            # update scene
+            self.radical_temp_layout_pix = temp_pix.copy()
+            self.sceneUpdate(self.template_strokes_layout_gview, self.template_strokes_layout_scene, temp_pix)
+            self.radical_targ_layout_pix = targ_pix.copy()
+            self.sceneUpdate(self.target_strokes_layout_gview, self.target_strokes_layout_scene, targ_pix)
+            del temp_fore_img, temp_back_img, temp_qimg, temp_pix, targ_fore_img, targ_back_img, targ_qimg, targ_pix
+
+        elif self.current_tab_index == "stroke_0":
+            if self.stroke_cover_img_rgb is None:
+                return
+            fore_img = self.stroke_cover_img_rgb.copy()
+            fore_img = np.array(fore_img, dtype=np.uint8)
+            size = (fore_img.shape[0], fore_img.shape[1])
+            back_img = createBackgound(size, type="jingzi")
+            back_img = np.array(back_img, dtype=np.uint8)
+
+            # add background
+            fore_img = addBackgroundImage(fore_img, back_img)
+            qimg = rgb2qimage(fore_img)
+            pix = QPixmap.fromImage(qimg)
+
+            self.stroke_cr_pix = pix.copy()
+            self.sceneUpdate(self.strokes_cr_gview, self.strokes_cr_scene, pix)
+            del fore_img, back_img, qimg, pix
+
+    def net20GridStateChange(self, btn):
+        """
+        Adding 20x20 grid background to RGB image.
+        :param btn:
+        :return:
+        """
+        if self.current_tab_index == "":
+            return
+        elif self.current_tab_index == "whole_0":
+            if self.whole_cover_img_rgb is None:
+                return
+            fore_img = self.whole_cover_img_rgb.copy()
+            size = (fore_img.shape[0], fore_img.shape[1])
+
+            back_img = createBackgound(size, type="net_20")
+            back_img = np.array(back_img, dtype=np.uint8)
+            fore_img = np.array(fore_img, dtype=np.uint8)
+
+            combine_img = addBackgroundImage(fore_img, back_img)
+            qimg = rgb2qimage(combine_img)
+
+            pix = QPixmap.fromImage(qimg)
+            self.whole_cr_pix = pix.copy()
+            self.sceneUpdate(self.cover_gview, self.cover_scene, self.whole_cr_pix)
+            del fore_img, back_img, combine_img, qimg, pix
+
+        elif self.current_tab_index == "whole_1":
+            if self.whole_temp_goc_img_rgb is None or self.whole_targ_goc_img_rgb is None or \
+                    self.whole_combine_goc_img_rgb is None:
+                return
+            temp_fore_img = self.whole_temp_goc_img_rgb.copy()
+            targ_fore_img = self.whole_targ_goc_img_rgb.copy()
+            combine_fore_img = self.whole_combine_goc_img_rgb.copy()
+
+            size = (temp_fore_img.shape[0], temp_fore_img.shape[1])
+            back_img = createBackgound(size, type="net_20")
+            back_img = np.array(back_img, dtype=np.uint8)
+            temp_fore_img = np.array(temp_fore_img, dtype=np.uint8)
+            targ_fore_img = np.array(targ_fore_img, dtype=np.uint8)
+            combine_fore_img = np.array(combine_fore_img, dtype=np.uint8)
+
+            # add background
+            temp_fore_img = addBackgroundImage(temp_fore_img, back_img)
+            targ_fore_img = addBackgroundImage(targ_fore_img, back_img)
+            combine_fore_img = addBackgroundImage(combine_fore_img, back_img)
+
+            # temp
+            temp_qimg = rgb2qimage(temp_fore_img)
+            targ_qimg = rgb2qimage(targ_fore_img)
+            combine_qimg = rgb2qimage(combine_fore_img)
+
+            temp_pix = QPixmap.fromImage(temp_qimg)
+            targ_pix = QPixmap.fromImage(targ_qimg)
+            combine_pix = QPixmap.fromImage(combine_qimg)
+
+            # update scene
+            self.whole_temp_goc_pix = temp_pix.copy()
+            self.sceneUpdate(self.cog_template_gview, self.template_cog_scene, temp_pix)
+            self.whole_targ_goc_pix = targ_pix.copy()
+            self.sceneUpdate(self.cog_target_gview, self.target_cog_scene, targ_pix)
+            self.whole_combine_goc_pix = combine_pix.copy()
+            self.sceneUpdate(self.cog_comparison_gview, self.cog_comparison_scene, combine_pix)
+            del temp_fore_img, temp_qimg, temp_pix, targ_fore_img, targ_qimg, targ_pix, combine_fore_img, \
+                combine_qimg, combine_pix
+
+        elif self.current_tab_index == "whole_2":
+            if self.whole_temp_ch_img_rgb is None or self.whole_targ_ch_img_rgb is None:
+                return
+            temp_fore_img = self.whole_temp_ch_img_rgb.copy()
+            targ_fore_img = self.whole_targ_ch_img_rgb.copy()
+
+            size = (temp_fore_img.shape[0], temp_fore_img.shape[1])
+            back_img = createBackgound(size, type="net_20")
+            back_img = np.array(back_img, dtype=np.uint8)
+
+            temp_fore_img = np.array(temp_fore_img, dtype=np.uint8)
+            targ_fore_img = np.array(targ_fore_img, dtype=np.uint8)
+
+            #add background
+            temp_fore_img = addBackgroundImage(temp_fore_img, back_img)
+            targ_fore_img = addBackgroundImage(targ_fore_img, back_img)
+
+            # temp and targ
+            temp_qimg = rgb2qimage(temp_fore_img)
+            targ_qimg = rgb2qimage(targ_fore_img)
+
+            temp_pix = QPixmap.fromImage(temp_qimg)
+            targ_pix = QPixmap.fromImage(targ_qimg)
+
+            # update scene
+            self.whole_temp_ch_pix = temp_pix.copy()
+            self.sceneUpdate(self.template_ch_gview, self.template_ch_scene, temp_pix)
+            self.whole_targ_ch_pix = targ_pix.copy()
+            self.sceneUpdate(self.target_ch_gview, self.target_ch_scene, targ_pix)
+
+            del temp_fore_img, temp_qimg, temp_pix, targ_fore_img, targ_qimg, targ_pix
+
+        elif self.current_tab_index == "radicals_1":
+            if self.strokes_temp_layout_img_rgb is None or self.strokes_targ_layout_img_rgb is None:
+                return
+            temp_fore_img = self.strokes_temp_layout_img_rgb.copy()
+            targ_fore_img = self.strokes_targ_layout_img_rgb.copy()
+            temp_fore_img = np.array(temp_fore_img, dtype=np.uint8)
+            targ_fore_img = np.array(targ_fore_img, dtype=np.uint8)
+
+            temp_size = (temp_fore_img.shape[0], temp_fore_img.shape[1])
+            targ_size = (targ_fore_img.shape[0], targ_fore_img.shape[1])
+
+            temp_back_img = createBackgound(temp_size, type="net_20")
+            targ_back_img = createBackgound(targ_size, type="net_20")
+
+            temp_back_img = np.array(temp_back_img, dtype=np.uint8)
+            targ_back_img = np.array(targ_back_img, dtype=np.uint8)
+
+            # add background
+            temp_fore_img = addBackgroundImage(temp_fore_img, temp_back_img)
+            targ_fore_img = addBackgroundImage(targ_fore_img, targ_back_img)
+
+            # temp and targ qimg
+            temp_qimg = rgb2qimage(temp_fore_img)
+            targ_qimg = rgb2qimage(targ_fore_img)
+            temp_pix = QPixmap.fromImage(temp_qimg)
+            targ_pix = QPixmap.fromImage(targ_qimg)
+
+            # update scene
+            self.radical_temp_layout_pix = temp_pix.copy()
+            self.sceneUpdate(self.template_strokes_layout_gview, self.template_strokes_layout_scene, temp_pix)
+            self.radical_targ_layout_pix = targ_pix.copy()
+            self.sceneUpdate(self.target_strokes_layout_gview, self.target_strokes_layout_scene, targ_pix)
+            del temp_fore_img, temp_back_img, temp_qimg, temp_pix, targ_fore_img, targ_back_img, targ_qimg, targ_pix
+
+        elif self.current_tab_index == "stroke_0":
+            if self.stroke_cover_img_rgb is None:
+                return
+            fore_img = self.stroke_cover_img_rgb.copy()
+            fore_img = np.array(fore_img, dtype=np.uint8)
+            size = (fore_img.shape[0], fore_img.shape[1])
+            back_img = createBackgound(size, type="net_20")
+            back_img = np.array(back_img, dtype=np.uint8)
+
+            # add background
+            fore_img = addBackgroundImage(fore_img, back_img)
+            qimg = rgb2qimage(fore_img)
+            pix = QPixmap.fromImage(qimg)
+
+            self.stroke_cr_pix = pix.copy()
+            self.sceneUpdate(self.strokes_cr_gview, self.strokes_cr_scene, pix)
+            del fore_img, back_img, qimg, pix
 
 
 class MplCanvas(FigureCanvas):
