@@ -53,6 +53,47 @@ def main():
     # new end points and cross points
     end_points = getEndPointsOfSkeletonLine(skeleton)
     cross_points = getCrossPointsOfSkeletonLine(skeleton)
+    cross_points_bk = cross_points.copy()
+
+    # merge the close points
+    cross_points_merged = []
+    cross_distance_threshold = 10
+    used_index = []
+    for i in range(len(cross_points)):
+        if i in used_index:
+            continue
+        pt1 = cross_points[i]
+        midd_pt = None
+        used_index.append(i)
+        for j in range(len(cross_points)):
+            if i == j or j in used_index:
+                continue
+            pt2 = cross_points[j]
+
+            dist = math.sqrt((pt2[0] - pt1[0]) ** 2 + (pt2[1] - pt1[1]) ** 2)
+            if dist < cross_distance_threshold:
+                used_index.append(j)
+                offset = (pt1[0] - pt2[0], pt1[1] - pt2[1])
+                print(offset)
+                midd_pt = (pt2[0] + int(offset[0] / 2.), pt2[1] + int(offset[1] / 2.0))
+                if skeleton[midd_pt[1]][midd_pt[0]] == 0.0:
+                    cross_points_merged.append(midd_pt)
+                else:
+                    min_distance = 100000000
+                    current_pt = None
+                    for y in range(skeleton.shape[0]):
+                        for x in range(skeleton.shape[1]):
+                            if skeleton[y][x] == 0:
+                                dist = math.sqrt((midd_pt[0] - x) ** 2 + (midd_pt[1] - y) ** 2)
+                                if dist < min_distance:
+                                    min_distance = dist
+                                    current_pt = (x, y)
+                    if current_pt:
+                        cross_points_merged.append(current_pt)
+
+    print("After merge cross points num: %d" % len(cross_points_merged))
+    cross_points = cross_points_merged
+
     print("After end: %d and cross: %d" % (len(end_points), len(cross_points)))
     skeleton_rgb = cv2.cvtColor(skeleton, cv2.COLOR_GRAY2RGB)
     # display all end points
@@ -60,6 +101,8 @@ def main():
         skeleton_rgb[pt[1]][pt[0]] = (0, 0, 255)
     for pt in cross_points:
         skeleton_rgb[pt[1]][pt[0]] = (0, 255, 0)
+    for pt in cross_points_bk:
+        skeleton_rgb[pt[1]][pt[0]] = (0, 0, 255)
 
     # all corner points on contour
     img = np.float32(img.copy())
@@ -133,11 +176,126 @@ def main():
     for pt in corners_points:
         contour_rgb[pt[1]][pt[0]] = (255, 0, 0)
 
+    # segment contour to sub-contours based on the corner points
+    def segmentContourBasedOnCornerPoints(contour_sorted, corner_points):
+        """
+        Segment contour to sub-contours based on the corner points
+        :param contour_sorted:
+        :param corner_points:
+        :return:
+        """
+        if contour_sorted is None or corner_points is None:
+            return
+        # sub conotour index
+        sub_contour_index = []
+        for pt in corner_points:
+            index = contour_sorted.index(pt)
+            sub_contour_index.append(index)
+        print("sub contour index num: %d" % len(sub_contour_index))
+        sub_contours = []
+        for i in range(len(sub_contour_index)):
+            if i == len(sub_contour_index) - 1:
+                sub_contour = contour_sorted[sub_contour_index[i]:len(contour_sorted)] + contour_sorted[0: sub_contour_index[0] + 1]
+            else:
+                sub_contour = contour_sorted[sub_contour_index[i]:sub_contour_index[i + 1] + 1]
+            sub_contours.append(sub_contour)
+        print("sub contours num: %d" % len(sub_contours))
+
+        return sub_contours
+
+    # segment contour to sub-contours
+    for contour in contours:
+        cont_sorted = sortPointsOnContourOfImage(contour)
+        sub_contours = segmentContourBasedOnCornerPoints(cont_sorted, corners_points)
+
     # cluster corner points
     corner_points_cluster = []
     used_index = []
-    # for i in range(len(corners_points)):
+    colinear_couple = []
+    for i in range(len(corners_points)):
+        if i in used_index:
+            continue
+        for j in range(len(corners_points)):
+            if i == j or j in used_index:
+                continue
+            min_offset = min(abs(corners_points[i][0]-corners_points[j][0]), abs(corners_points[i][1]-corners_points[j][1]))
+            if min_offset < 20:
+                couple = [corners_points[i], corners_points[j]]
+                colinear_couple.append(couple)
+                used_index.append(j)
+    print("co linear num: %d" % len(colinear_couple ))
 
+
+    print("sub contours num: %d" % len(sub_contours))
+
+    stroke1_img = np.ones_like(contour) * 255
+    stroke1_img = np.array(stroke1_img, dtype=np.uint8)
+    stroke1_img_rgb = cv2.cvtColor(stroke1_img, cv2.COLOR_GRAY2RGB)
+
+    for pt in sub_contours[0]:
+        stroke1_img_rgb[pt[1]][pt[0]] = (0, 0, 0)
+        stroke1_img[pt[1]][pt[0]] = 0
+    for pt in sub_contours[2]:
+        stroke1_img_rgb[pt[1]][pt[0]] = (0, 0, 0)
+        stroke1_img[pt[1]][pt[0]] = 0
+
+    cv2.line(stroke1_img_rgb, sub_contours[0][0], sub_contours[2][-1], (0, 0, 255), 1)
+    cv2.line(stroke1_img_rgb, sub_contours[0][-1], sub_contours[2][0], (0, 0, 255), 1)
+    cv2.line(stroke1_img, sub_contours[0][0], sub_contours[2][-1], 0, 1)
+    cv2.line(stroke1_img, sub_contours[0][-1], sub_contours[2][0], 0, 1)
+
+    stroke2_img = np.ones_like(contour) * 255
+    stroke2_img = np.array(stroke2_img, dtype=np.uint8)
+    stroke2_img_rgb = cv2.cvtColor(stroke2_img, cv2.COLOR_GRAY2RGB)
+
+
+    for pt in sub_contours[1]:
+        stroke2_img_rgb[pt[1]][pt[0]] = (0, 0, 0)
+        stroke2_img[pt[1]][pt[0]] = 0
+    for pt in sub_contours[3]:
+        stroke2_img_rgb[pt[1]][pt[0]] = (0, 0, 0)
+        stroke2_img[pt[1]][pt[0]] = 0
+
+    cv2.line(stroke2_img_rgb, sub_contours[1][0], sub_contours[3][-1], (0, 0, 255), 1)
+    cv2.line(stroke2_img_rgb, sub_contours[1][-1], sub_contours[3][0], (0, 0, 255), 1)
+    cv2.line(stroke2_img, sub_contours[1][0], sub_contours[3][-1], 0, 1)
+    cv2.line(stroke2_img, sub_contours[1][-1], sub_contours[3][0], 0, 1)
+
+    storke1_points = sortPointsOnContourOfImage(stroke1_img)
+    stroke2_points = sortPointsOnContourOfImage(stroke2_img)
+
+    stroke1_img = np.ones_like(stroke1_img) * 255
+    stroke1_img = np.array(stroke1_img, dtype=np.uint8)
+
+    storke1_points = np.array([storke1_points], "int32")
+    cv2.fillPoly(stroke1_img, storke1_points, 0)
+
+    stroke2_img = np.ones_like(stroke2_img) * 255
+    stroke2_img = np.array(stroke2_img, dtype=np.uint8)
+
+    storke2_points = np.array([stroke2_points], "int32")
+    cv2.fillPoly(stroke2_img, storke2_points, 0)
+
+
+
+
+
+
+
+
+    # find corresponding sub-contours based on the co-linear couple
+    # for sub in sub_contours:
+    #     pt1 = sub[0]
+    #     pt2 = sub[-1]
+    #
+    #     couples = []
+    #     for coup in colinear_couple:
+    #         if pt1 in coup or pt2 in coup:
+    #             # if 4 points, 2 points should be in same sub-contour
+    #             if pt1 in coup and pt2 in coup:
+    #                 continue
+    #             couples.append(coup)
+    #     print("sub couples num: %d" % len(couples))
 
 
 
@@ -151,6 +309,10 @@ def main():
     # cv2.imshow("skeleton no branches", skeleton_nobranches )
     cv2.imshow("skeleton rgb", skeleton_rgb)
     cv2.imshow("contour rgb", contour_rgb)
+    cv2.imshow("stroke 1", stroke1_img)
+    cv2.imshow("stroke 2", stroke2_img)
+    cv2.imshow("stroke1rgb", stroke1_img_rgb)
+    cv2.imshow("stroke2rgb", stroke2_img_rgb)
 
     # for i in range(len(contours)):
     #     cv2.imshow("contour %d" % i, contours[i])

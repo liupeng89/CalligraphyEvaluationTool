@@ -160,7 +160,7 @@ from utils.Functions import getContourOfImage, sortPointsOnContourOfImage, remov
                             getCrossPointsOfSkeletonLine, getNumberOfValidPixels
 
 # 0107亻  1133壬  0554十
-path = "1133壬.jpg"
+path = "0107亻.jpg"
 
 img = cv2.imread(path, 0)
 _, img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
@@ -247,14 +247,20 @@ print("corner merged len: %d" % len(corners_merged))
 # get skeleton of image
 skeleton = getSkeletonOfImage(img_copy)
 skeleton_rgb = cv2.cvtColor(skeleton, cv2.COLOR_GRAY2RGB)
+skeleton_points = []
+for y in range(skeleton.shape[0]):
+    for x in range(skeleton.shape[1]):
+        if skeleton[y][x] == 0.0:
+            skeleton_points.append((x, y))
 
 end_points = getEndPointsOfSkeletonLine(skeleton)
 cross_points = getCrossPointsOfSkeletonLine(skeleton)
 print("end points len:%d" % len(end_points))
 print("cross points len: %d" % len(cross_points))
 
-# skeleton = removeBranchOfSkeletonLine(skeleton, end_points, cross_points, DIST_THRESHOLD=50)
-
+# skeleton = removeBranchOfSkeletonLine(skeleton, end_points, cross_points, DIST_THRESHOLD=20)
+end_points = getEndPointsOfSkeletonLine(skeleton)
+cross_points = getCrossPointsOfSkeletonLine(skeleton)
 
 for pt in cross_points:
     skeleton_rgb[pt[1]][pt[0]] = (0, 0, 255)
@@ -287,6 +293,13 @@ for pt in corners_merged:
         singular_points.append(pt)
 print("singular points num: %d" % len(singular_points))
 
+
+for pt in corners_merged:
+    contour_rgb[pt[1]][pt[0]] = (0, 0, 255)
+for pt in skeleton_points:
+    contour_rgb[pt[1]][pt[0]] = (255, 0, 0)
+for pt in cross_points:
+    contour_rgb[pt[1]][pt[0]] = (0, 0, 255)
 for pt in singular_points:
     contour_rgb[pt[1]][pt[0]] = (0, 255, 0)
 
@@ -319,19 +332,26 @@ for i in range(len(sub_contours)):
 
 # merge two sub-contours
 # 亻T type
-start_pt = sub_contours[0][-1]
-end_pt = sub_contours[0][0]
+index = 0
+for sub_contour in sub_contours:
 
-stroke_img = np.ones_like(contour) * 255
-stroke_img = np.array(stroke_img, dtype=np.uint8)
+    start_pt = sub_contour[-1]
+    end_pt = sub_contour[0]
 
-for pt in sub_contours[0]:
-    stroke_img[pt[1]][pt[0]] = 0
+    stroke_img = np.ones_like(contour) * 255
+    stroke_img = np.array(stroke_img, dtype=np.uint8)
 
-cv2.line(stroke_img, start_pt, end_pt, 0, 1)
-stroke_contour_sort = sortPointsOnContourOfImage(stroke_img)
-stroke_contour_sort = np.array([stroke_contour_sort], "int32")
-cv2.fillPoly(stroke_img, stroke_contour_sort, 0)
+    for pt in sub_contour:
+        stroke_img[pt[1]][pt[0]] = 0
+
+    cv2.line(stroke_img, start_pt, end_pt, 0, 1)
+    stroke_contour_sort = sortPointsOnContourOfImage(stroke_img)
+    stroke_contour_sort = np.array([stroke_contour_sort], "int32")
+    cv2.fillPoly(stroke_img, stroke_contour_sort, 0)
+
+    cv2.imshow("stroke image %d" % index, stroke_img)
+
+    index += 1
 
 
 
@@ -346,7 +366,7 @@ cv2.imshow("contour", contour)
 cv2.imshow("img rgb", img_rgb)
 cv2.imshow("contour rbg", contour_rgb)
 cv2.imshow("sub contours", contour_rgb1)
-cv2.imshow("stroke image", stroke_img)
+
 # cv2.imshow("skeleton", skeleton)
 cv2.imshow("skeleton rgb", skeleton_rgb)
 
@@ -397,3 +417,81 @@ cv2.destroyAllWindows()
 #
 # for pt in single_points:
 #     contour_rgb[pt[1]][pt[0]] = (0, 0, 255)
+
+# import numpy as np
+# import cv2
+# import math
+# from skimage.morphology import skeletonize
+#
+#
+# from utils.Functions import getContourOfImage, sortPointsOnContourOfImage, removeBreakPointsOfContour, \
+#                             getSkeletonOfImage, removeBranchOfSkeletonLine, getEndPointsOfSkeletonLine, \
+#                             getCrossPointsOfSkeletonLine, getNumberOfValidPixels
+#
+# # 0107亻  1133壬  0554十
+# path = "0107亻.jpg"
+#
+# img = cv2.imread(path, 0)
+# _, img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
+# img_copy = img.copy()
+#
+# skeleton = getSkeletonOfImage(img.copy())
+# skeleton_rgb = cv2.cvtColor(skeleton, cv2.COLOR_GRAY2RGB)
+#
+# cross_points = getCrossPointsOfSkeletonLine(skeleton)
+# end_points = getEndPointsOfSkeletonLine(skeleton)
+# skeleton = removeBranchOfSkeletonLine(skeleton, end_points, cross_points)
+#
+# cross_points = getCrossPointsOfSkeletonLine(skeleton)
+# end_points = getEndPointsOfSkeletonLine(skeleton)
+# print("Before merge num: %d" % len(cross_points))
+#
+# # merge the close points
+# cross_points_merged = []
+# cross_distance_threshold = 10
+# used_index = []
+# for i in range(len(cross_points)):
+#     if i in used_index:
+#         continue
+#     pt1 = cross_points[i]
+#     midd_pt = None
+#     used_index.append(i)
+#     for j in range(len(cross_points)):
+#         if i == j or j in used_index:
+#             continue
+#         pt2 = cross_points[j]
+#
+#         dist = math.sqrt((pt2[0]-pt1[0])**2 + (pt2[1]-pt1[1])**2)
+#         if dist < cross_distance_threshold:
+#             used_index.append(j)
+#             offset = (pt1[0]-pt2[0], pt1[1]-pt2[1])
+#             print(offset)
+#             midd_pt = (pt2[0]+int(offset[0]/2.), pt2[1]+int(offset[1]/2.0))
+#             if skeleton[midd_pt[1]][midd_pt[0]] == 0.0:
+#                 cross_points_merged.append(midd_pt)
+#             else:
+#                 min_distance = 100000000
+#                 current_pt = None
+#                 for y in range(skeleton.shape[0]):
+#                     for x in range(skeleton.shape[1]):
+#                         if skeleton[y][x] == 0:
+#                             dist = math.sqrt((midd_pt[0]-x)**2 + (midd_pt[1]-y)**2)
+#                             if dist < min_distance:
+#                                 min_distance = dist
+#                                 current_pt = (x, y)
+#                 if current_pt:
+#                     cross_points_merged.append(current_pt)
+#
+# print("After merge cross points num: %d" % len(cross_points_merged))
+#
+# for pt in cross_points_merged:
+#     print(pt)
+#     skeleton_rgb[pt[1]][pt[0]] = (0, 255, 0)
+#
+#
+# cv2.imshow("img", img)
+# cv2.imshow("skeleton", skeleton)
+# cv2.imshow("skeleton", skeleton_rgb)
+#
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()

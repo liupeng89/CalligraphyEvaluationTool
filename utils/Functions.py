@@ -884,19 +884,63 @@ def removeBranchOfSkeleton(image, distance_threshod=20):
     """
     if image is None:
         return
-    end_points = []
-    cross_points = []
-    for y in range(image.shape[0]):
-        for x in range(image.shape[1]):
-            if image[y][x] == 0:
-                num = getNumberOfValidPixels(image, x, y)
-                if num == 1:
-                    # end point
-                    end_points.append((x, y))
-                elif num >= 3:
-                    # cross point
-                    cross_points.append((x, y))
+    cross_points = getCrossPointsOfSkeletonLine(image)
+    end_points = getEndPointsOfSkeletonLine(image)
+    if cross_points is None or len(cross_points) == 0 or end_points is None or len(end_points) == 0:
+        return
 
+    # search next point from end point until the next point is the cross point, if length of this branch is shorter
+    # than the distance threshold, remove this branch
+    for end in end_points:
+        used_points = []
+        used_points.append(end)
+        current_pt = end
+        while True:
+            # p2-p9 should not be the cross points
+            if (current_pt[0], current_pt[1]-1) in cross_points or (current_pt[0]+1, current_pt[1]-1) in cross_points or\
+                (current_pt[0] + 1, current_pt[1]) in cross_points or (current_pt[0]+1, current_pt[1]+1) in cross_points or \
+                (current_pt[0], current_pt[1] + 1) in cross_points or (current_pt[0]-1, current_pt[1]+1) in cross_points or\
+                (current_pt[0]-1, current_pt[1]) in cross_points or (current_pt[0]-1, current_pt[1]-1) in cross_points:
+                break
+
+            if image[current_pt[1]-1][current_pt[0]] == 0.0 and (current_pt[0], current_pt[1]-1) not in used_points:
+                # P2
+                next_pt = (current_pt[0], current_pt[1]-1)
+
+            elif image[current_pt[1]-1][current_pt[0]+1] == 0.0 and (current_pt[0]+1, current_pt[1]-1) not in used_points:
+                # P3
+                next_pt = (current_pt[0]+1, current_pt[1]-1)
+            elif image[current_pt[1]][current_pt[0]+1] == 0.0 and (current_pt[0]+1, current_pt[1]) not in used_points:
+                # P4
+                next_pt = (current_pt[0]+1, current_pt[1])
+            elif image[current_pt[1]+1][current_pt[0]+1] == 0.0 and (current_pt[0]+1, current_pt[1]+1) not in used_points:
+                # P5
+                next_pt = (current_pt[0]+1, current_pt[1]+1)
+            elif image[current_pt[1]+1][current_pt[0]] == 0.0 and (current_pt[0], current_pt[1]+1) not in used_points:
+                # P6
+                next_pt = (current_pt[0], current_pt[1]+1)
+            elif image[current_pt[1]+1][current_pt[0]-1] == 0.0 and (current_pt[0]-1, current_pt[1]+1) not in used_points:
+                # P7
+                next_pt = (current_pt[0]-1, current_pt[1]+1)
+            elif image[current_pt[1]][current_pt[0]-1] == 0.0 and (current_pt[0]-1, current_pt[1]) not in used_points:
+                # P8
+                next_pt = (current_pt[0]-1, current_pt[1])
+            elif image[current_pt[1] - 1][current_pt[0] - 1] == 0.0 and (current_pt[0] - 1, current_pt[1] - 1) not in used_points:
+                # P9
+                next_pt = (current_pt[0] - 1, current_pt[1] - 1)
+
+            if next_pt in cross_points:
+                # next point is the cross point
+                break
+            else:
+                used_points.append(next_pt)
+                current_pt = next_pt
+        # if length is shorter than distance threshold, remove this branch
+        if len(used_points) <= distance_threshod:
+            for pt in used_points:
+                image[pt[1]][pt[0]] = 255.
+
+    return image
 
 
 
@@ -1482,6 +1526,30 @@ def min_distance_point2pointlist(point, points):
             min_dist = dist
     return min_dist
 
+# segment contour to sub-contours based on the corner points
+def segmentContourBasedOnCornerPoints(contour_sorted, corner_points):
+    """
+    Segment contour to sub-contours based on the corner points
+    :param contour_sorted:
+    :param corner_points:
+    :return:
+    """
+    if contour_sorted is None or corner_points is None:
+        return
+    # sub conotour index
+    sub_contour_index = []
+    for pt in corner_points:
+        index = contour_sorted.index(pt)
+        sub_contour_index.append(index)
 
+    sub_contours = []
+    for i in range(len(sub_contour_index)):
+        if i == len(sub_contour_index) - 1:
+            sub_contour = contour_sorted[sub_contour_index[i]:len(contour_sorted)] + contour_sorted[0: sub_contour_index[0] + 1]
+        else:
+            sub_contour = contour_sorted[sub_contour_index[i]:sub_contour_index[i + 1] + 1]
+        sub_contours.append(sub_contour)
+
+    return sub_contours
 
 
