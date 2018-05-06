@@ -212,8 +212,9 @@ for i in range(len(corner_points)):
         # co sub-contour
         if isInOneSubContour(pt1, pt2, sub_contours):
             # co subcontour
-            if [pt1, pt2] not in parallel_points and [pt2, pt1] not in parallel_points:
-                co_sub_contour.append([pt1, pt2])
+            pair = set((pt1, pt2))
+            if pair not in co_sub_contour and pair not in co_linear_points and pair not in parallel_points:
+                co_sub_contour.append(pair)
 
 print(co_linear_points)
 print(parallel_points)
