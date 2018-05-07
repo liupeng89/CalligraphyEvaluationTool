@@ -1553,3 +1553,57 @@ def segmentContourBasedOnCornerPoints(contour_sorted, corner_points):
     return sub_contours
 
 
+def createBlankGrayscaleImage(image):
+    """
+    Create blank grayscale image based on the reference image shape.
+    :param image:
+    :return:
+    """
+    if image is None:
+        return
+    img = np.ones_like(image) * 255
+    img = np.array(img, dtype=np.uint8)
+
+    return img
+
+
+def createBlankRGBImage(image):
+    """
+    Create blank RGB image based on the reference image shape.
+    :param image:
+    :return:
+    """
+    if image is None:
+        return
+    gray = createBlankGrayscaleImage(image)
+    rgb = cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB)
+    return rgb
+
+
+# merge points on corner lines
+def merge_corner_lines_to_point(corner_line_points, contour_sorted):
+    corner_points = []
+    if corner_line_points is None or contour_sorted is None:
+        return corner_points
+    # merge point on corner line
+    i = 0
+    start_id = end_id = i
+    while True:
+        if i == len(contour_sorted)-1:
+            break
+        if contour_sorted[i] in corner_line_points:
+            start_id = i
+            end_id = i
+            for j in range(i+1, len(contour_sorted)):
+                if contour_sorted[j] in corner_line_points:
+                    continue
+                else:
+                    end_id = j-1
+                    break
+            midd_id = start_id + int((end_id-start_id)/2.)
+            corner_points.append(contour_sorted[midd_id])
+            i = end_id
+
+        i += 1
+
+    return corner_points
