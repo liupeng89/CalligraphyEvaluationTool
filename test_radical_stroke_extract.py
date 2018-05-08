@@ -108,8 +108,8 @@ for pt in corners_area_points:
     if contour[pt[1]][pt[0]] == 0.0:
          corner_line_points.append(pt)
 
-for pt in corner_line_points:
-    contour_rgb[pt[1]][pt[0]] = (0, 255, 0)
+# for pt in corner_line_points:
+#     contour_rgb[pt[1]][pt[0]] = (0, 255, 0)
 
 # merge points on corner lines
 def merge_corner_lines_to_point(corner_line_points, contour_sorted):
@@ -141,8 +141,8 @@ def merge_corner_lines_to_point(corner_line_points, contour_sorted):
 
 corner_all_points = merge_corner_lines_to_point(corner_line_points, contour_sorted)
 
-for pt in corner_all_points:
-    contour_rgb[pt[1]][pt[0]] = (255, 0, 0)
+# for pt in corner_all_points:
+#     contour_rgb[pt[1]][pt[0]] = (255, 0, 0)
 
 # valid corner points should be close to the cross points
 corner_points = []
@@ -256,10 +256,61 @@ for i in range(len(corner_points_cluster)):
             crop_lines.append((P3, P0))
 
 # display crop lines
-for line in crop_lines:
-    cv2.line(contour_rgb, line[0], line[1], (0,255,0),1)
-
 crop_lines_points = []
+for line in crop_lines:
+    cv2.line(contour_rgb, line[0], line[1], (0, 255, 0), 1)
+    next_pt = line[0]
+    line_points = [line[0]]
+#     while True:
+#
+#         if next_pt == line[1]:
+#             break
+#         x = next_pt[0]; y = next_pt[1]
+#
+#         """
+#                 9 | 2 | 3
+#                 8 |   | 4
+#                 7 | 6 | 5
+#         """
+#
+#         # p2
+#         if contour_rgb[y-1][x][0] == 0 and contour_rgb[y-1][x][1] == 255 and contour_rgb[y-1][x][2] == 0 and (x, y-1) not in line_points:
+#             next_pt = (x, y-1)
+#             print("p2")
+#         # p3
+#         elif contour_rgb[y-1][x+1][0] == 0 and contour_rgb[y-1][x+1][1] == 255 and contour_rgb[y-1][x+1][2] == 0 and (x+1, y-1) not in line_points:
+#             next_pt = (x+1, y-1)
+#             print("p3")
+#         # p4
+#         elif contour_rgb[y][x+1][0] == 0 and contour_rgb[y][x+1][1] == 255 and contour_rgb[y][x+1][2] == 0 and (x+1, y) not in line_points:
+#             next_pt = (x+1, y)
+#             print("p4")
+#         # p5
+#         elif contour_rgb[y+1][x+1][0] == 0 and contour_rgb[y+1][x+1][1] == 255 and contour_rgb[y+1][x+1][2] == 0 and (x+1, y+1) not in line_points:
+#             next_pt = (x+1, y+1)
+#             print("p5")
+#         # p6
+#         elif contour_rgb[y+1][x][0] == 0 and contour_rgb[y+1][x][1] == 255 and contour_rgb[y+1][x][2] == 0 and (x, y+1) not in line_points:
+#             next_pt = (x, y+1)
+#             print("p6")
+#         # p7
+#         elif contour_rgb[y+1][x-1][0] == 0 and contour_rgb[y+1][x-1][1] == 255 and contour_rgb[y+1][x-1][2] == 0 and (x-1, y+1) not in line_points:
+#             next_pt = (x-1, y+1)
+#             print("p7")
+#         # p8
+#         elif contour_rgb[y][x-1][0] == 0 and contour_rgb[y][x-1][1] == 255 and contour_rgb[y][x-1][2] == 0 and (x-1, y) not in line_points:
+#             next_pt = (x-1, y)
+#             print("p8")
+#         # p9
+#         elif contour_rgb[y-1][x-1][0] == 0 and contour_rgb[y-1][x-1][1] == 255 and contour_rgb[y-1][x-1][2] == 0 and (x-1, y-1) not in line_points:
+#             next_pt = (x-1, y-1)
+#             print("p2")
+#         line_points.append(next_pt)
+#     line_points.append(line[1])
+#
+#     crop_lines_points.append(line_points)
+#
+# print("crop lines points num: %d" % len(crop_lines_points))
 
 # crop character
 print("contor point num: %d" % len(contour_sorted))
