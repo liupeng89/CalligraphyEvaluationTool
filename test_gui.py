@@ -255,30 +255,64 @@
 #
 # print(isSubList(a, b))
 
-import cv2
+# import cv2
+# import numpy as np
+# from skimage import feature
+#
+# from utils.Functions import createBlankGrayscaleImage, createBlankRGBImage
+#
+#
+# # 1133壬 2252支 0631叟
+# path = "0631叟.jpg"
+#
+# img = cv2.imread(path, 0)
+# _, img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
+# img_rbg = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+#
+# edges = feature.canny(img)
+# edges1 = feature.canny(img, sigma=3)
+#
+# print(edges)
+#
+# contour_gray = createBlankGrayscaleImage(img)
+# contour_rgb = createBlankRGBImage(img)
+#
+# cv2.imshow("edge", edges)
+# cv2.imshow("edge1", edges1)
+#
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
+
 import numpy as np
-from skimage import feature
-
-from utils.Functions import createBlankGrayscaleImage, createBlankRGBImage
 
 
-# 1133壬 2252支 0631叟
-path = "0631叟.jpg"
+def medfilt (x, k):
+    """Apply a length-k median filter to a 1D array x.
+    Boundaries are extended by repeating endpoints.
+    """
+    assert k % 2 == 1, "Median filter length must be odd."
+    assert x.ndim == 1, "Input must be one-dimensional."
+    k2 = (k - 1) // 2
+    y = np.zeros ((len (x), k), dtype=x.dtype)
+    y[:,k2] = x
+    for i in range (k2):
+        j = k2 - i
+        y[j:,i] = x[:-j]
+        y[:j,i] = x[0]
+        y[:-j,-(i+1)] = x[j:]
+        y[-j:,-(i+1)] = x[-1]
+    return np.median (y, axis=1)
 
-img = cv2.imread(path, 0)
-_, img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
-img_rbg = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 
-edges = feature.canny(img)
-edges1 = feature.canny(img, sigma=3)
+def test ():
+    import pylab as p
+    x = np.linspace (0, 1, 101)
+    x[3::10] = 1.5
+    p.plot (x)
+    p.plot (medfilt (x,3))
+    p.plot (medfilt (x,5))
+    p.show ()
 
-print(edges)
 
-contour_gray = createBlankGrayscaleImage(img)
-contour_rgb = createBlankRGBImage(img)
-
-cv2.imshow("edge", edges)
-cv2.imshow("edge1", edges1)
-
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+if __name__ == '__main__':
+    test ()

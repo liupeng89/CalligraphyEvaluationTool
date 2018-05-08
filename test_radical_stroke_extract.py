@@ -29,7 +29,7 @@ radicals = components[0]
 radicals = np.array(radicals, dtype=np.uint8)
 
 # # contour
-contour = getContourOfImage(radicals, minVal=20, maxVal=240)
+# contour = getContourOfImage(radicals, minVal=20, maxVal=240)
 contour = np.array(contour, dtype=np.uint8)
 
 contour_seg = getConnectedComponents(contour)
@@ -82,10 +82,10 @@ end_points = getEndPointsOfSkeletonLine(skeleton)
 cross_points = getCrossPointsOfSkeletonLine(skeleton)
 skeleton_rgb = cv2.cvtColor(skeleton, cv2.COLOR_GRAY2RGB)
 #
-# for pt in end_points:
-#     skeleton_rgb[pt[1]][pt[0]] = (0, 0, 255)
-# for pt in cross_points:
-#     skeleton_rgb[pt[1]][pt[0]] = (0, 255, 0)
+for pt in end_points:
+    skeleton_rgb[pt[1]][pt[0]] = (0, 0, 255)
+for pt in cross_points:
+    skeleton_rgb[pt[1]][pt[0]] = (0, 255, 0)
 
 # corner area detect
 img_corner = np.float32(img.copy())
@@ -158,204 +158,314 @@ for pt in corner_points:
 print("corner points num: %d" % len(corner_points))
 
 # cluster the corner points
-dist_threshold = 40
+dist_threshold = 30
 corner_points_cluster = []
 used_index = []
-for i in range(len(corner_points)):
-    if i in used_index:
-        continue
-    pt1 = corner_points[i]
-    cluster = [pt1]
-    used_index.append(i)
+for i in range(len(cross_points)):
+    cross_pt = cross_points[i]
+    cluster = []
     for j in range(len(corner_points)):
-        if i == j or j in used_index:
+        if j in used_index:
             continue
-        pt2 = corner_points[j]
-        dist = math.sqrt((pt1[0]-pt2[0])**2 + (pt1[1]-pt2[1])**2)
-        if dist <= dist_threshold:
-            cluster.append(pt2)
+        corner_pt = corner_points[j]
+        dist = math.sqrt((cross_pt[0]-corner_pt[0])**2 + (cross_pt[1]-corner_pt[1])**2)
+        if dist < dist_threshold:
+            cluster.append(corner_pt)
             used_index.append(j)
+    if cluster:
+        corner_points_cluster.append(cluster)
+print("corner cluster num:%d" % len(corner_points_cluster))
+print(corner_points_cluster)
 
-    corner_points_cluster.append(cluster)
-
-print("clust num: %d" % len(corner_points_cluster))
-
-def isInCluster(point_pair, cluster):
-    if point_pair is None or cluster is None:
-        return False
-    label = False
-    for cl in cluster:
-        if point_pair[0] in cl and point_pair[1] in cl:
-            label = True
-            break
-    return label
+# detect corner points type: two point, four point (rectangle or diamond)
 
 
-# segment contour to sub-contour
+crop_lines = []
+for i in range(len(corner_points_cluster)):
+    corner_clt = corner_points_cluster[i]
+    if len(corner_clt) == 2:
+        print(" tow points")
+        crop_lines.append((corner_clt))
+    elif len(corner_clt) == 4:
+        # rectangle or diamond (vertical/horizon or pie/na)
+        min_offset = 1000
+        for i in range(len(corner_clt)):
+            pt1 = corner_clt[i]
+            if i == len(corner_clt) - 1:
+                pt2 = corner_clt[0]
+            else:
+                pt2 = corner_clt[i+1]
+            offset = abs(pt1[0]-pt2[0])
+            if offset <= min_offset:
+                min_offset = offset
+        if min_offset <= 10:
+            print("rectangle")
+            if abs(corner_clt[0][0]-corner_clt[1][0]) <= 10:
+                crop_lines.append((corner_clt[0], corner_clt[1]))
+                crop_lines.append((corner_clt[2], corner_clt[3]))
+                if abs(corner_clt[0][1] - corner_clt[2][1]) <= 10:
+                    crop_lines.append((corner_clt[0], corner_clt[2]))
+                    crop_lines.append((corner_clt[1], corner_clt[3]))
+                else:
+                    crop_lines.append((corner_clt[0], corner_clt[3]))
+                    crop_lines.append((corner_clt[1], corner_clt[2]))
+            elif abs(corner_clt[0][0] - corner_clt[2][0]) <= 10:
+                crop_lines.append((corner_clt[0], corner_clt[2]))
+                crop_lines.append((corner_clt[1], corner_clt[3]))
+
+                if abs(corner_clt[0][1] - corner_clt[1][1]) <= 10:
+                    crop_lines.append((corner_clt[0], corner_clt[1]))
+                    crop_lines.append((corner_clt[2], corner_clt[3]))
+                else:
+                    crop_lines.append((corner_clt[0], corner_clt[3]))
+                    crop_lines.append((corner_clt[1], corner_clt[2]))
+
+        else:
+            print("diamond")
+            """
+                                P3
+                        P0              P2
+                                P1
+            """
+            P0 = P1 = P2 = P3 = None
+            min_x = min_y = 10000000
+            max_x = max_y = 0
+            for pt in corner_clt:
+                if pt[0] > max_x:
+                    max_x = pt[0]
+                if pt[0] < min_x:
+                    min_x = pt[0]
+                if pt[1] > max_y:
+                    max_y = pt[1]
+                if pt[1] < min_y:
+                    min_y = pt1[1]
+            print("minx:%d miny:%d maxx:%d maxy:%d" % (min_x, min_y, max_x, max_y))
+
+            for pt in corner_clt:
+                if pt[0] == min_x:
+                    P0 = pt
+                elif pt[0] == max_x:
+                    P2 = pt
+                if pt[1] == min_y:
+                    P3 = pt
+                elif pt[1] == max_y:
+                    P1 = pt
+            crop_lines.append((P0, P1))
+            crop_lines.append((P1, P2))
+            crop_lines.append((P2, P3))
+            crop_lines.append((P3, P0))
+
+# display crop lines
+for line in crop_lines:
+    cv2.line(contour_rgb, line[0], line[1], (0,255,0),1)
+
+crop_lines_points = []
+
+# crop character
 print("contor point num: %d" % len(contour_sorted))
 sub_contours = segmentContourBasedOnCornerPoints(contour_sorted, corner_points)
-print("sub contour num: %d" % len(sub_contours))
+print("sub contours num: %d" % len(sub_contours))
 
-# corner points correspondence
+# separate single region to several region
+contour_separate_region = cv2.cvtColor(contour_rgb, cv2.COLOR_RGB2GRAY)
+_, contour_separate_region = cv2.threshold(contour_separate_region, 240, 255, cv2.THRESH_BINARY)
 
 
-def isInOneSubContour(pt1, pt2, sub_contours):
-    if pt1 is None or pt2 is None or sub_contours is None:
-        return False
-    label = False
-    for sub in sub_contours:
-        if pt1 in sub and pt2 in sub:
-            label = True
-            break
-    return label
 
-# co-linear  |y1-y2| <= 10 pixels and not in same sub-contour
-co_linear_points = []
-parallel_points = []
-co_sub_contour = []
-for i in range(len(corner_points)):
-    pt1 = corner_points[i]
-    for j in range(len(corner_points)):
-        if i == j:
-            continue
-        pt2 = corner_points[j]
 
-        # co-linear should be in same cluster and can be in same sub-contour
-        if abs(pt1[0] - pt2[0]) <= 10 and isInCluster([pt1, pt2], corner_points_cluster):
-            # co-linear
-            if [pt1, pt2] not in co_linear_points and [pt2, pt1] not in co_linear_points:
-                co_linear_points.append([pt1, pt2])
 
-        # parallel, should not be in same sub-contour, but should be in same cluster
-        if abs(pt1[1] - pt2[1]) <= 10 and not isInOneSubContour(pt1, pt2, sub_contours) and isInCluster([pt1, pt2], corner_points_cluster):
-            # parallel
-            if [pt1, pt2] not in parallel_points and [pt2, pt1] not in parallel_points:
-                if [pt1, pt2] not in co_linear_points and [pt2, pt1] not in co_linear_points:
-                    parallel_points.append([pt1, pt2])
 
-        # co sub-contour, and do not repeat in previous lists.
-        if isInOneSubContour(pt1, pt2, sub_contours):
-            # co subcontour
-            if [pt1, pt2] not in co_sub_contour and [pt2, pt1] not in co_sub_contour:
-                if [pt1, pt2] not in co_linear_points and [pt2, pt1] not in co_linear_points:
-                    if [pt1, pt2] not in parallel_points and [pt2, pt1] not in parallel_points and isInCluster([pt1, pt2], corner_points_cluster):
-                        co_sub_contour.append([pt1, pt2])
+# cv2.imshow("radicals", radicals)
+cv2.imshow("contour", contour)
+# cv2.imshow("skeleton", skeleton)
+cv2.imshow("skeleton rgb", skeleton_rgb)
+# cv2.imshow("img_corner_area", img_corner_area)
+cv2.imshow("contour_rgb", contour_rgb)
+cv2.imshow("contour_separate_region", contour_separate_region)
 
-print(co_linear_points)
-print(parallel_points)
-print(co_sub_contour)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 
-co_linear_points_cluster = []
-parallel_points_cluster = []
-co_sub_contour_cluster = []
 
-def isSubList(l1, l2):
-    if l1 == [] and l2 != []:
-        return True
-    if l1 != [] and l2 == []:
-        return False
-    if l1 == [] and l2 == []:
-        return True
-    for item in l1:
-        if item not in l2:
-            return False
-    return True
 
-# cluster co_linear points pair based on the cluster points
-used_index = []
-for i in range(len(co_linear_points)):
-    if i in used_index:
-        continue
-    used_index.append(i)
-    pair_cluster = [co_linear_points[i]]
-    cluster = None
-    for cl in corner_points_cluster:
-        if isSubList(co_linear_points[i], cl):
-            cluster = cl.copy()
-
-    # j
-    if cluster is None:
-        print("cluster should not be None!")
-    for j in range(len(co_linear_points)):
-        if j == i or j in used_index:
-            continue
-        if isSubList(co_linear_points[j], cluster):
-            pair_cluster.append(co_linear_points[j])
-        used_index.append(j)
-    co_linear_points_cluster.append(pair_cluster)
-
-print(co_linear_points_cluster)
-
-# cluster the parallel points pair
-used_index = []
-for i in range(len(parallel_points)):
-    if i in used_index:
-        continue
-    used_index.append(i)
-    pair_cluster = [parallel_points[i]]
-    cluster = None
-    for cl in corner_points_cluster:
-        if isSubList(parallel_points[i], cl):
-            cluster = cl.copy()
-
-    # j
-    if cluster is None:
-        print("cluster should not be None!")
-    for j in range(len(parallel_points)):
-        if j == i or j in used_index:
-            continue
-        if isSubList(parallel_points[j], cluster):
-            pair_cluster.append(parallel_points[j])
-        used_index.append(j)
-    parallel_points_cluster.append(pair_cluster)
-
-print(parallel_points_cluster)
-
-# cluster the co-subcontour points pair
-used_index = []
-for i in range(len(co_sub_contour)):
-    if i in used_index:
-        continue
-    used_index.append(i)
-    pair_cluster = [co_sub_contour[i]]
-    cluster = None
-    for cl in corner_points_cluster:
-        if isSubList(co_sub_contour[i], cl):
-            cluster = cl.copy()
-
-    # j
-    if cluster is None:
-        print("cluster should not be None!")
-    for j in range(len(co_sub_contour)):
-        if j == i or j in used_index:
-            continue
-        if isSubList(co_sub_contour[j], cluster):
-            pair_cluster.append(co_sub_contour[j])
-        used_index.append(j)
-        co_sub_contour_cluster.append(pair_cluster)
-
-print(co_sub_contour_cluster)
-
-def findCoLinearSubContours(point_pair, sub_contours):
-    """
-    Find two co-linear sub-contours based on the point pair.
-    :param point_pair:
-    :param sub_contours:
-    :return:
-    """
-    if point_pair is None or sub_contours is None:
-        return
-    pt1 = point_pair[0]; pt2 = point_pair[1]
-    sub1 = None; sub2 = None
-    for sub in sub_contours:
-        if pt1 in sub and pt2 not in sub:
-            sub1 = sub.copy()
-        if pt2 in sub and pt1 not in sub:
-            sub2 = sub.copy()
-    return [sub1, sub2]
-
+# exit()
 #
-print("sub-contours num : %d" % len(sub_contours))
+# def isInCluster(point_pair, cluster):
+#     if point_pair is None or cluster is None:
+#         return False
+#     label = False
+#     for cl in cluster:
+#         if point_pair[0] in cl and point_pair[1] in cl:
+#             label = True
+#             break
+#     return label
+#
+#
+# # segment contour to sub-contour
+# print("contor point num: %d" % len(contour_sorted))
+# sub_contours = segmentContourBasedOnCornerPoints(contour_sorted, corner_points)
+# print("sub contour num: %d" % len(sub_contours))
+#
+# # corner points correspondence
+#
+#
+# def isInOneSubContour(pt1, pt2, sub_contours):
+#     if pt1 is None or pt2 is None or sub_contours is None:
+#         return False
+#     label = False
+#     for sub in sub_contours:
+#         if pt1 in sub and pt2 in sub:
+#             label = True
+#             break
+#     return label
+#
+# # co-linear  |y1-y2| <= 10 pixels and not in same sub-contour
+# co_linear_points = []
+# parallel_points = []
+# co_sub_contour = []
+# for i in range(len(corner_points)):
+#     pt1 = corner_points[i]
+#     for j in range(len(corner_points)):
+#         if i == j:
+#             continue
+#         pt2 = corner_points[j]
+#
+#         # co-linear should be in same cluster and can be in same sub-contour
+#         if abs(pt1[0] - pt2[0]) <= 10 and isInCluster([pt1, pt2], corner_points_cluster):
+#             # co-linear
+#             if [pt1, pt2] not in co_linear_points and [pt2, pt1] not in co_linear_points:
+#                 co_linear_points.append([pt1, pt2])
+#
+#         # parallel, should not be in same sub-contour, but should be in same cluster
+#         if abs(pt1[1] - pt2[1]) <= 10 and not isInOneSubContour(pt1, pt2, sub_contours) and isInCluster([pt1, pt2], corner_points_cluster):
+#             # parallel
+#             if [pt1, pt2] not in parallel_points and [pt2, pt1] not in parallel_points:
+#                 if [pt1, pt2] not in co_linear_points and [pt2, pt1] not in co_linear_points:
+#                     parallel_points.append([pt1, pt2])
+#
+#         # co sub-contour, and do not repeat in previous lists.
+#         if isInOneSubContour(pt1, pt2, sub_contours):
+#             # co subcontour
+#             if [pt1, pt2] not in co_sub_contour and [pt2, pt1] not in co_sub_contour:
+#                 if [pt1, pt2] not in co_linear_points and [pt2, pt1] not in co_linear_points:
+#                     if [pt1, pt2] not in parallel_points and [pt2, pt1] not in parallel_points and isInCluster([pt1, pt2], corner_points_cluster):
+#                         co_sub_contour.append([pt1, pt2])
+#
+# print(co_linear_points)
+# print(parallel_points)
+# print(co_sub_contour)
+#
+# co_linear_points_cluster = []
+# parallel_points_cluster = []
+# co_sub_contour_cluster = []
+#
+# def isSubList(l1, l2):
+#     if l1 == [] and l2 != []:
+#         return True
+#     if l1 != [] and l2 == []:
+#         return False
+#     if l1 == [] and l2 == []:
+#         return True
+#     for item in l1:
+#         if item not in l2:
+#             return False
+#     return True
+#
+# # cluster co_linear points pair based on the cluster points
+# used_index = []
+# for i in range(len(co_linear_points)):
+#     if i in used_index:
+#         continue
+#     used_index.append(i)
+#     pair_cluster = [co_linear_points[i]]
+#     cluster = None
+#     for cl in corner_points_cluster:
+#         if isSubList(co_linear_points[i], cl):
+#             cluster = cl.copy()
+#
+#     # j
+#     if cluster is None:
+#         print("cluster should not be None!")
+#     for j in range(len(co_linear_points)):
+#         if j == i or j in used_index:
+#             continue
+#         if isSubList(co_linear_points[j], cluster):
+#             pair_cluster.append(co_linear_points[j])
+#         used_index.append(j)
+#     co_linear_points_cluster.append(pair_cluster)
+#
+# print(co_linear_points_cluster)
+#
+# # cluster the parallel points pair
+# used_index = []
+# for i in range(len(parallel_points)):
+#     if i in used_index:
+#         continue
+#     used_index.append(i)
+#     pair_cluster = [parallel_points[i]]
+#     cluster = None
+#     for cl in corner_points_cluster:
+#         if isSubList(parallel_points[i], cl):
+#             cluster = cl.copy()
+#
+#     # j
+#     if cluster is None:
+#         print("cluster should not be None!")
+#     for j in range(len(parallel_points)):
+#         if j == i or j in used_index:
+#             continue
+#         if isSubList(parallel_points[j], cluster):
+#             pair_cluster.append(parallel_points[j])
+#         used_index.append(j)
+#     parallel_points_cluster.append(pair_cluster)
+#
+# print(parallel_points_cluster)
+#
+# # cluster the co-subcontour points pair
+# used_index = []
+# for i in range(len(co_sub_contour)):
+#     if i in used_index:
+#         continue
+#     used_index.append(i)
+#     pair_cluster = [co_sub_contour[i]]
+#     cluster = None
+#     for cl in corner_points_cluster:
+#         if isSubList(co_sub_contour[i], cl):
+#             cluster = cl.copy()
+#
+#     # j
+#     if cluster is None:
+#         print("cluster should not be None!")
+#     for j in range(len(co_sub_contour)):
+#         if j == i or j in used_index:
+#             continue
+#         if isSubList(co_sub_contour[j], cluster):
+#             pair_cluster.append(co_sub_contour[j])
+#         used_index.append(j)
+#         co_sub_contour_cluster.append(pair_cluster)
+#
+# print(co_sub_contour_cluster)
+#
+# def findCoLinearSubContours(point_pair, sub_contours):
+#     """
+#     Find two co-linear sub-contours based on the point pair.
+#     :param point_pair:
+#     :param sub_contours:
+#     :return:
+#     """
+#     if point_pair is None or sub_contours is None:
+#         return
+#     pt1 = point_pair[0]; pt2 = point_pair[1]
+#     sub1 = None; sub2 = None
+#     for sub in sub_contours:
+#         if pt1 in sub and pt2 not in sub:
+#             sub1 = sub.copy()
+#         if pt2 in sub and pt1 not in sub:
+#             sub2 = sub.copy()
+#     return [sub1, sub2]
+#
+# #
+# print("sub-contours num : %d" % len(sub_contours))
 #
 # # def findCoSubContour(pair, sub_contours):
 # #     if pair is None or sub_contours is None:
@@ -368,19 +478,6 @@ print("sub-contours num : %d" % len(sub_contours))
 #
 #
 
-
-
-
-
-# cv2.imshow("radicals", radicals)
-cv2.imshow("contour", contour)
-# cv2.imshow("skeleton", skeleton)
-# cv2.imshow("skeleton rgb", skeleton_rgb)
-# cv2.imshow("img_corner_area", img_corner_area)
-# cv2.imshow("contour_rgb", contour_rgb)
-
-cv2.waitKey(0)
-cv2.destroyAllWindows()
 
 
 

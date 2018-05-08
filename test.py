@@ -5,7 +5,8 @@ import math
 from utils.Functions import getConnectedComponents, getContourOfImage, getSkeletonOfImage, removeBreakPointsOfContour, \
                             removeBranchOfSkeletonLine, removeBranchOfSkeleton, getEndPointsOfSkeletonLine, \
                           getCrossPointsOfSkeletonLine, sortPointsOnContourOfImage, min_distance_point2pointlist, \
-                            getNumberOfValidPixels, segmentContourBasedOnCornerPoints, merge_corner_lines_to_point
+                            getNumberOfValidPixels, segmentContourBasedOnCornerPoints, merge_corner_lines_to_point, \
+                            fitCurve, draw_cubic_bezier
 
 # 1133壬 2252支 0631叟
 path = "0631叟.jpg"
@@ -22,6 +23,7 @@ contour_rgb = cv2.cvtColor(contour, cv2.COLOR_GRAY2RGB)
 
 contour_points_sorted = sortPointsOnContourOfImage(contour)
 print("contour points num:%d" % len(contour_points_sorted))
+
 
 img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 _, img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
