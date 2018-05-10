@@ -5,74 +5,33 @@ import math
 from utils.Functions import getConnectedComponents, getContourOfImage, getSkeletonOfImage, removeBreakPointsOfContour, \
                             removeBranchOfSkeletonLine, removeBranchOfSkeleton, getEndPointsOfSkeletonLine, \
                           getCrossPointsOfSkeletonLine, sortPointsOnContourOfImage, min_distance_point2pointlist, \
-                            getNumberOfValidPixels, segmentContourBasedOnCornerPoints
+                            getNumberOfValidPixels, segmentContourBasedOnCornerPoints, createBlankGrayscaleImage, \
+                            getLinePoints, getBreakPointsFromContour, merge_corner_lines_to_point, getCropLines, \
+                            getCornerPointsOfImage, getClusterOfCornerPoints, getCropLinesPoints
 
-# 1133壬 2252支 0631叟
-path = "2252支.jpg"
-
+# 1133壬 2252支 0631叟 0633口
+path = "1133壬.jpg"
 img = cv2.imread(path)
 
+# contour
 contour = getContourOfImage(img)
-
 contour = getSkeletonOfImage(contour)
-
+contour = np.array(contour, dtype=np.uint8)
 
 img = cv2.imread(path, 0)
 _, img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
 img_rgb = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 
 components = getConnectedComponents(img)
-
 print("radicals num: %d" % len(components))
 
 radicals = components[0]
 radicals = np.array(radicals, dtype=np.uint8)
 
-# # contour
-# contour = getContourOfImage(radicals, minVal=20, maxVal=240)
-contour = np.array(contour, dtype=np.uint8)
-
-contour_seg = getConnectedComponents(contour)
-print("contourseg num %d" % len(contour_seg))
-
-for i in range(len(contour_seg)):
-    cv2.imshow("seg_%d" % i, contour_seg[i])
-
-
-def getBreakPointsFromContour(contour):
-    break_points = []
-    if contour is None:
-        return break_points
-    # check whether exist break points or not
-    start_pt = None
-    for y in range(contour.shape[0]):
-        for x in range(contour.shape[1]):
-            if contour[y][x] == 0.0:
-                if start_pt is None:
-                    start_pt = (x, y)
-                    break
-        if start_pt is not None:
-            break
-    print("start point: (%d, %d)" % (start_pt[0], start_pt[1]))
-
-
-
-
-for y in range(contour.shape[0]):
-    for x in range(contour.shape[1]):
-        if contour[y][x] == 0.0:
-            num = getNumberOfValidPixels(contour, x, y)
-            if num == 1:
-                print("point: (%d, %d)" % (x, y))
-
-#
-#
-# # # remove the break points
-contour = removeBreakPointsOfContour(contour)
+# sorted the contour points
 contour_sorted = sortPointsOnContourOfImage(contour)
 contour_rgb = cv2.cvtColor(contour, cv2.COLOR_GRAY2RGB)
-#
-#
+
 # # skeleton
 skeleton = getSkeletonOfImage(radicals)
 # # remove extra branches
@@ -81,77 +40,9 @@ skeleton = removeBranchOfSkeleton(skeleton, distance_threshod=20)
 end_points = getEndPointsOfSkeletonLine(skeleton)
 cross_points = getCrossPointsOfSkeletonLine(skeleton)
 skeleton_rgb = cv2.cvtColor(skeleton, cv2.COLOR_GRAY2RGB)
-#
-for pt in end_points:
-    skeleton_rgb[pt[1]][pt[0]] = (0, 0, 255)
-for pt in cross_points:
-    skeleton_rgb[pt[1]][pt[0]] = (0, 255, 0)
 
 # corner area detect
-img_corner = np.float32(img.copy())
-dst = cv2.cornerHarris(img_corner, 3, 3, 0.03)
-dst = cv2.dilate(dst, None)
-
-corners_area_points = []
-for y in range(dst.shape[0]):
-    for x in range(dst.shape[1]):
-        if dst[y][x] > 0.1 * dst.max():
-            corners_area_points.append((x, y))
-img_corner_area = img_rgb.copy()
-
-for pt in corners_area_points:
-    img_corner_area[pt[1]][pt[0]] = (0, 0, 255)
-
-# corner points on contour
-corner_line_points = []
-for pt in corners_area_points:
-    if contour[pt[1]][pt[0]] == 0.0:
-         corner_line_points.append(pt)
-
-# for pt in corner_line_points:
-#     contour_rgb[pt[1]][pt[0]] = (0, 255, 0)
-
-# merge points on corner lines
-def merge_corner_lines_to_point(corner_line_points, contour_sorted):
-    corner_points = []
-    if corner_line_points is None or contour_sorted is None:
-        return corner_points
-    # merge point on corner line
-    i = 0
-    start_id = end_id = i
-    while True:
-        if i == len(contour_sorted)-1:
-            break
-        if contour_sorted[i] in corner_line_points:
-            start_id = i
-            end_id = i
-            for j in range(i+1, len(contour_sorted)):
-                if contour_sorted[j] in corner_line_points:
-                    continue
-                else:
-                    end_id = j-1
-                    break
-            midd_id = start_id + int((end_id-start_id)/2.)
-            corner_points.append(contour_sorted[midd_id])
-            i = end_id
-
-        i += 1
-
-    return corner_points
-
-corner_all_points = merge_corner_lines_to_point(corner_line_points, contour_sorted)
-
-# for pt in corner_all_points:
-#     contour_rgb[pt[1]][pt[0]] = (255, 0, 0)
-
-# valid corner points should be close to the cross points
-corner_points = []
-threshold_distance = 40
-for pt in corner_all_points:
-    dist_cross = min_distance_point2pointlist(pt, cross_points)
-    dist_end = min_distance_point2pointlist(pt, end_points)
-    if dist_cross < threshold_distance and dist_end > threshold_distance / 3.:
-        corner_points.append(pt)
+corner_points = getCornerPointsOfImage(img.copy(), contour, cross_points, end_points)
 
 for pt in corner_points:
     contour_rgb[pt[1]][pt[0]] = (0, 0, 255)
@@ -159,168 +50,138 @@ print("corner points num: %d" % len(corner_points))
 
 # cluster the corner points
 dist_threshold = 30
-corner_points_cluster = []
-used_index = []
-for i in range(len(cross_points)):
-    cross_pt = cross_points[i]
-    cluster = []
-    for j in range(len(corner_points)):
-        if j in used_index:
-            continue
-        corner_pt = corner_points[j]
-        dist = math.sqrt((cross_pt[0]-corner_pt[0])**2 + (cross_pt[1]-corner_pt[1])**2)
-        if dist < dist_threshold:
-            cluster.append(corner_pt)
-            used_index.append(j)
-    if cluster:
-        corner_points_cluster.append(cluster)
+corner_points_cluster = getClusterOfCornerPoints(corner_points, cross_points)
 print("corner cluster num:%d" % len(corner_points_cluster))
-print(corner_points_cluster)
 
 # detect corner points type: two point, four point (rectangle or diamond)
-
-
-crop_lines = []
-for i in range(len(corner_points_cluster)):
-    corner_clt = corner_points_cluster[i]
-    if len(corner_clt) == 2:
-        print(" tow points")
-        crop_lines.append((corner_clt))
-    elif len(corner_clt) == 4:
-        # rectangle or diamond (vertical/horizon or pie/na)
-        min_offset = 1000
-        for i in range(len(corner_clt)):
-            pt1 = corner_clt[i]
-            if i == len(corner_clt) - 1:
-                pt2 = corner_clt[0]
-            else:
-                pt2 = corner_clt[i+1]
-            offset = abs(pt1[0]-pt2[0])
-            if offset <= min_offset:
-                min_offset = offset
-        if min_offset <= 10:
-            print("rectangle")
-            if abs(corner_clt[0][0]-corner_clt[1][0]) <= 10:
-                crop_lines.append((corner_clt[0], corner_clt[1]))
-                crop_lines.append((corner_clt[2], corner_clt[3]))
-                if abs(corner_clt[0][1] - corner_clt[2][1]) <= 10:
-                    crop_lines.append((corner_clt[0], corner_clt[2]))
-                    crop_lines.append((corner_clt[1], corner_clt[3]))
-                else:
-                    crop_lines.append((corner_clt[0], corner_clt[3]))
-                    crop_lines.append((corner_clt[1], corner_clt[2]))
-            elif abs(corner_clt[0][0] - corner_clt[2][0]) <= 10:
-                crop_lines.append((corner_clt[0], corner_clt[2]))
-                crop_lines.append((corner_clt[1], corner_clt[3]))
-
-                if abs(corner_clt[0][1] - corner_clt[1][1]) <= 10:
-                    crop_lines.append((corner_clt[0], corner_clt[1]))
-                    crop_lines.append((corner_clt[2], corner_clt[3]))
-                else:
-                    crop_lines.append((corner_clt[0], corner_clt[3]))
-                    crop_lines.append((corner_clt[1], corner_clt[2]))
-
-        else:
-            print("diamond")
-            """
-                                P3
-                        P0              P2
-                                P1
-            """
-            P0 = P1 = P2 = P3 = None
-            min_x = min_y = 10000000
-            max_x = max_y = 0
-            for pt in corner_clt:
-                if pt[0] > max_x:
-                    max_x = pt[0]
-                if pt[0] < min_x:
-                    min_x = pt[0]
-                if pt[1] > max_y:
-                    max_y = pt[1]
-                if pt[1] < min_y:
-                    min_y = pt1[1]
-            print("minx:%d miny:%d maxx:%d maxy:%d" % (min_x, min_y, max_x, max_y))
-
-            for pt in corner_clt:
-                if pt[0] == min_x:
-                    P0 = pt
-                elif pt[0] == max_x:
-                    P2 = pt
-                if pt[1] == min_y:
-                    P3 = pt
-                elif pt[1] == max_y:
-                    P1 = pt
-            crop_lines.append((P0, P1))
-            crop_lines.append((P1, P2))
-            crop_lines.append((P2, P3))
-            crop_lines.append((P3, P0))
-
-# display crop lines
-crop_lines_points = []
+crop_lines = getCropLines(corner_points_cluster)
 for line in crop_lines:
     cv2.line(contour_rgb, line[0], line[1], (0, 255, 0), 1)
-    next_pt = line[0]
-    line_points = [line[0]]
-#     while True:
-#
-#         if next_pt == line[1]:
-#             break
-#         x = next_pt[0]; y = next_pt[1]
-#
-#         """
-#                 9 | 2 | 3
-#                 8 |   | 4
-#                 7 | 6 | 5
-#         """
-#
-#         # p2
-#         if contour_rgb[y-1][x][0] == 0 and contour_rgb[y-1][x][1] == 255 and contour_rgb[y-1][x][2] == 0 and (x, y-1) not in line_points:
-#             next_pt = (x, y-1)
-#             print("p2")
-#         # p3
-#         elif contour_rgb[y-1][x+1][0] == 0 and contour_rgb[y-1][x+1][1] == 255 and contour_rgb[y-1][x+1][2] == 0 and (x+1, y-1) not in line_points:
-#             next_pt = (x+1, y-1)
-#             print("p3")
-#         # p4
-#         elif contour_rgb[y][x+1][0] == 0 and contour_rgb[y][x+1][1] == 255 and contour_rgb[y][x+1][2] == 0 and (x+1, y) not in line_points:
-#             next_pt = (x+1, y)
-#             print("p4")
-#         # p5
-#         elif contour_rgb[y+1][x+1][0] == 0 and contour_rgb[y+1][x+1][1] == 255 and contour_rgb[y+1][x+1][2] == 0 and (x+1, y+1) not in line_points:
-#             next_pt = (x+1, y+1)
-#             print("p5")
-#         # p6
-#         elif contour_rgb[y+1][x][0] == 0 and contour_rgb[y+1][x][1] == 255 and contour_rgb[y+1][x][2] == 0 and (x, y+1) not in line_points:
-#             next_pt = (x, y+1)
-#             print("p6")
-#         # p7
-#         elif contour_rgb[y+1][x-1][0] == 0 and contour_rgb[y+1][x-1][1] == 255 and contour_rgb[y+1][x-1][2] == 0 and (x-1, y+1) not in line_points:
-#             next_pt = (x-1, y+1)
-#             print("p7")
-#         # p8
-#         elif contour_rgb[y][x-1][0] == 0 and contour_rgb[y][x-1][1] == 255 and contour_rgb[y][x-1][2] == 0 and (x-1, y) not in line_points:
-#             next_pt = (x-1, y)
-#             print("p8")
-#         # p9
-#         elif contour_rgb[y-1][x-1][0] == 0 and contour_rgb[y-1][x-1][1] == 255 and contour_rgb[y-1][x-1][2] == 0 and (x-1, y-1) not in line_points:
-#             next_pt = (x-1, y-1)
-#             print("p2")
-#         line_points.append(next_pt)
-#     line_points.append(line[1])
-#
-#     crop_lines_points.append(line_points)
-#
-# print("crop lines points num: %d" % len(crop_lines_points))
 
-# crop character
-print("contor point num: %d" % len(contour_sorted))
+# crop lines points
+crop_lines_points = getCropLinesPoints(img, crop_lines)
+print("crop lines num: %d" % len(crop_lines_points))
+
+img_separate = img.copy()
+for line in crop_lines:
+    cv2.line(img_separate, line[0], line[1], 255, 1)
+# for line in crop_lines_points:
+#     if line is None:
+#         continue
+#     for pt in line:
+#         img_separate[pt[1]][pt[0]] = 255
+
+strokes_components = getConnectedComponents(img_separate, connectivity=8)
+print("storkes components num: %d" % len(strokes_components))
+
+# find region based on the crop lines
 sub_contours = segmentContourBasedOnCornerPoints(contour_sorted, corner_points)
 print("sub contours num: %d" % len(sub_contours))
 
-# separate single region to several region
+
+
+for i in range(len(strokes_components)):
+    component = strokes_components[i]
+    cv2.imshow("component_%d" % i, component)
+# recompose strokes components
+
 contour_separate_region = cv2.cvtColor(contour_rgb, cv2.COLOR_RGB2GRAY)
 _, contour_separate_region = cv2.threshold(contour_separate_region, 240, 255, cv2.THRESH_BINARY)
 
+
+# seprarate contour
+# sub_contours_cluster = []
+# used_index = []
+# for i in range(len(sub_contours)):
+#     if i in used_index:
+#         continue
+#     used_index.append(i)
+#     c_start_pt = sub_contours[i][0]
+#     c_end_pt = sub_contours[i][-1]
+#
+#     sub_contour = [sub_contours[i]]
+#
+#     for line in crop_lines:
+#         index = 0
+#         if c_start_pt in line and c_end_pt not in line:
+#             index = line.index(c_start_pt)
+#         elif c_start_pt not in line and c_end_pt in line:
+#             index = line.index(c_end_pt)
+#         print(index)
+#
+#         if index == 0:
+#             next_pt = line[1]
+#         elif index == 1:
+#             next_pt = line[0]
+#         for j in range(len(sub_contours)):
+#             if i == j or j in used_index:
+#                 continue
+#             if next_pt in sub_contours[j] and line[index] not in sub_contours[j]:
+#                 sub_contour.append(sub_contours[j])
+#                 used_index.append(j)
+#
+#     sub_contours_cluster.append(sub_contour)
+#
+# print(sub_contours_cluster)
+
+# for i in range(len(sub_contours_cluster)):
+#     bk = createBlankGrayscaleImage(img)
+#
+#     for sub in sub_contours_cluster[i]:
+#         for pt in sub:
+#             bk[pt[1]][pt[0]] = 0
+#     cv2.imshow("bk%d" % i, bk)
+
+# for i in range(len(sub_contours)):
+#     bk = createBlankGrayscaleImage(img)
+#
+#     for pt in sub_contours[i]:
+#         bk[pt[1]][pt[0]] = 0
+#
+#     cv2.imshow("bk_%d" % i, bk)
+#
+# for i in range(len(crop_lines)):
+#     bk = createBlankGrayscaleImage(img)
+#
+#     cv2.line(bk, crop_lines[i][0], crop_lines[i][1], 0, 1)
+#
+#     cv2.imshow("line_%d"%i, bk)
+
+sub_contours_cluster = []
+sub_contours_cluster.append([0, 2,4,6])
+sub_contours_cluster.append([1,5])
+sub_contours_cluster.append([3])
+sub_contours_cluster.append([7])
+
+crop_lines_cluster = []
+crop_lines_cluster.append([0,1, 2, 5])
+crop_lines_cluster.append([3, 4])
+crop_lines_cluster.append([5])
+crop_lines_cluster.append([0])
+
+for i in range(len(sub_contours_cluster)):
+    sub_cluster = sub_contours_cluster[i]
+    line_cluster = crop_lines_cluster[i]
+
+    bk = createBlankGrayscaleImage(img)
+
+    for index in sub_cluster:
+        sub = sub_contours[index]
+        for pt in sub:
+            bk[pt[1]][pt[0]] = 0
+
+    for index in line_cluster:
+        line = crop_lines[index]
+        cv2.line(bk, line[0], line[1], 0, 1)
+
+    # fill color
+    cont_sorted = sortPointsOnContourOfImage(bk)
+    cont_sorted = np.array([cont_sorted], "int32")
+    stroke_img = createBlankGrayscaleImage(bk)
+    stroke_img = cv2.fillPoly(stroke_img, cont_sorted, 0)
+
+
+    cv2.imshow("stroke_%d" % i, stroke_img)
 
 
 
@@ -328,12 +189,13 @@ _, contour_separate_region = cv2.threshold(contour_separate_region, 240, 255, cv
 
 # cv2.imshow("radicals", radicals)
 cv2.imshow("contour", contour)
-# cv2.imshow("skeleton", skeleton)
-cv2.imshow("skeleton rgb", skeleton_rgb)
+cv2.imshow("skeleton", skeleton)
+# cv2.imshow("skeleton rgb", skeleton_rgb)
 # cv2.imshow("img_corner_area", img_corner_area)
-cv2.imshow("contour_rgb", contour_rgb)
+# cv2.imshow("contour_rgb", contour_rgb)
 cv2.imshow("contour_separate_region", contour_separate_region)
-
+# cv2.imshow("contour_separate_region_bit",  contour_separate_region_bit)
+cv2.imshow("img_separate", img_separate)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
@@ -531,6 +393,34 @@ cv2.destroyAllWindows()
 
 
 
+#
+#
+#
+# # crop character
+# print("contor point num: %d" % len(contour_sorted))
+# sub_contours = segmentContourBasedOnCornerPoints(contour_sorted, corner_points)
+# print("sub contours num: %d" % len(sub_contours))
+#
+# # separate single region to several region
+# contour_separate_region = cv2.cvtColor(contour_rgb, cv2.COLOR_RGB2GRAY)
+# _, contour_separate_region = cv2.threshold(contour_separate_region, 240, 255, cv2.THRESH_BINARY)
+#
+# contour_separate_region_bit = np.array(255-contour_separate_region, dtype=np.uint8)
+
+# for i in range(len(sub_contours)):
+#     sub = sub_contours[i]
+#     bk_img = createBlankGrayscaleImage(img)
+#     for pt in sub:
+#         bk_img[pt[1]][pt[0]] = 0
+#
+#     cv2.imshow("sub contour_%d" % i, bk_img)
 
 
+# for y in range(radicals.shape[0]):
+#     for x in range(radicals.shape[1]):
+#         if radicals[y][x] == 255:
+#             contour_separate_region_bit[y][x] = 255
+#
+# stroke_components = getConnectedComponents(contour_separate_region_bit)
+# print(len(stroke_components))
 

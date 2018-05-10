@@ -1607,3 +1607,274 @@ def merge_corner_lines_to_point(corner_line_points, contour_sorted):
         i += 1
 
     return corner_points
+
+
+def getLinePoints(grayscale, start_pt, end_pt):
+    """
+    Get all points in the line from start point to end point
+    :param grayscale:
+    :param start_pt:
+    :param end_pt:
+    :return:
+    """
+    points = []
+    if grayscale is None:
+        return points
+    #
+    points.append(start_pt)
+    next_pt = start_pt
+
+    while True:
+        if next_pt == end_pt:
+            break
+        x = next_pt[0]; y = next_pt[1]
+
+        if grayscale[y-1][x] == 0 and (x, y-1) not in points:
+            # p2
+            next_pt = (x, y-1)
+        elif grayscale[y-1][x+1] == 0 and (x+1, y-1) not in points:
+            # P3
+            next_pt = (x+1, y-1)
+        elif grayscale[y][x+1] == 0 and (x+1, y) not in points:
+            # P4
+            next_pt = (x+1, y)
+        elif grayscale[y+1][x+1] == 0 and (x+1, y+1) not in points:
+            # P5
+            next_pt = (x+1, y+1)
+        elif grayscale[y+1][x] == 0 and (x, y+1) not in points:
+            # P6
+            next_pt = (x, y+1)
+        elif grayscale[y+1][x-1] == 0 and (x-1, y+1) not in points:
+            # P7
+            next_pt = (x-1, y+1)
+        elif grayscale[y][x-1] == 0 and (x-1, y) not in points:
+            # P8
+            next_pt = (x-1, y)
+        elif grayscale[y-1][x-1] == 0 and (x-1, y-1) not in points:
+            # P9
+            next_pt = (x-1, y-1)
+        print(next_pt)
+        points.append(next_pt)
+    points.append(end_pt)
+
+    print("line points num: %d" % len(points))
+    return points
+
+
+
+def getBreakPointsFromContour(contour):
+    break_points = []
+    if contour is None:
+        return break_points
+    # check whether exist break points or not
+    start_pt = None
+    for y in range(contour.shape[0]):
+        for x in range(contour.shape[1]):
+            if contour[y][x] == 0.0:
+                if start_pt is None:
+                    start_pt = (x, y)
+                    break
+        if start_pt is not None:
+            break
+    print("start point: (%d, %d)" % (start_pt[0], start_pt[1]))
+
+
+# merge points on corner lines
+def merge_corner_lines_to_point(corner_line_points, contour_sorted):
+    corner_points = []
+    if corner_line_points is None or contour_sorted is None:
+        return corner_points
+    # merge point on corner line
+    i = 0
+    start_id = end_id = i
+    while True:
+        if i == len(contour_sorted)-1:
+            break
+        if contour_sorted[i] in corner_line_points:
+            start_id = i
+            end_id = i
+            for j in range(i+1, len(contour_sorted)):
+                if contour_sorted[j] in corner_line_points:
+                    continue
+                else:
+                    end_id = j-1
+                    break
+            midd_id = start_id + int((end_id-start_id)/2.)
+            corner_points.append(contour_sorted[midd_id])
+            i = end_id
+
+        i += 1
+
+    return corner_points
+
+
+def getCropLines(corner_points_cluster):
+    crop_lines = []
+    if corner_points_cluster is None:
+        return crop_lines
+    for i in range(len(corner_points_cluster)):
+        corner_clt = corner_points_cluster[i]
+        if len(corner_clt) == 2:
+            print(" tow points")
+            crop_lines.append((corner_clt))
+        elif len(corner_clt) == 4:
+            # rectangle or diamond (vertical/horizon or pie/na)
+            min_offset = 1000
+            for i in range(len(corner_clt)):
+                pt1 = corner_clt[i]
+                if i == len(corner_clt) - 1:
+                    pt2 = corner_clt[0]
+                else:
+                    pt2 = corner_clt[i + 1]
+                offset = abs(pt1[0] - pt2[0])
+                if offset <= min_offset:
+                    min_offset = offset
+            if min_offset <= 10:
+                print("rectangle")
+                if abs(corner_clt[0][0] - corner_clt[1][0]) <= 10:
+                    crop_lines.append((corner_clt[0], corner_clt[1]))
+                    crop_lines.append((corner_clt[2], corner_clt[3]))
+                    if abs(corner_clt[0][1] - corner_clt[2][1]) <= 10:
+                        crop_lines.append((corner_clt[0], corner_clt[2]))
+                        crop_lines.append((corner_clt[1], corner_clt[3]))
+                    else:
+                        crop_lines.append((corner_clt[0], corner_clt[3]))
+                        crop_lines.append((corner_clt[1], corner_clt[2]))
+                elif abs(corner_clt[0][0] - corner_clt[2][0]) <= 10:
+                    crop_lines.append((corner_clt[0], corner_clt[2]))
+                    crop_lines.append((corner_clt[1], corner_clt[3]))
+
+                    if abs(corner_clt[0][1] - corner_clt[1][1]) <= 10:
+                        crop_lines.append((corner_clt[0], corner_clt[1]))
+                        crop_lines.append((corner_clt[2], corner_clt[3]))
+                    else:
+                        crop_lines.append((corner_clt[0], corner_clt[3]))
+                        crop_lines.append((corner_clt[1], corner_clt[2]))
+
+            else:
+                print("diamond")
+                """
+                                    P3
+                            P0              P2
+                                    P1
+                """
+                P0 = P1 = P2 = P3 = None
+                min_x = min_y = 10000000
+                max_x = max_y = 0
+                for pt in corner_clt:
+                    if pt[0] > max_x:
+                        max_x = pt[0]
+                    if pt[0] < min_x:
+                        min_x = pt[0]
+                    if pt[1] > max_y:
+                        max_y = pt[1]
+                    if pt[1] < min_y:
+                        min_y = pt1[1]
+                print("minx:%d miny:%d maxx:%d maxy:%d" % (min_x, min_y, max_x, max_y))
+
+                for pt in corner_clt:
+                    if pt[0] == min_x:
+                        P0 = pt
+                    elif pt[0] == max_x:
+                        P2 = pt
+                    if pt[1] == min_y:
+                        P3 = pt
+                    elif pt[1] == max_y:
+                        P1 = pt
+                crop_lines.append((P0, P1))
+                crop_lines.append((P1, P2))
+                crop_lines.append((P2, P3))
+                crop_lines.append((P3, P0))
+    return crop_lines
+
+def getCropLinesPoints(image, crop_lines):
+    """
+    Get crop lines points.
+    :param image: 
+    :param crop_lines: 
+    :return: 
+    """
+    crop_lines_points = []
+    if image is None or crop_lines is None:
+        return crop_lines_points
+
+    for line in crop_lines:
+        bk_img = createBlankGrayscaleImage(image)
+        if bk_img is None:
+            print("bk img is none!")
+            break
+        # draw line in bk img
+        cv2.line(bk_img, line[0], line[1], 0, 1)
+        line_points = getLinePoints(bk_img, line[0], line[1])
+        crop_lines_points.append(line_points)
+
+        del bk_img
+    return crop_lines_points
+
+def getCornerPointsOfImage(image, contour, cross_points, end_points, threshold_distance=40, blockSize=3, ksize=3, k=0.03):
+    """
+    Get the corner point of image.
+    :param image:
+    :return:
+    """
+    corner_points = []
+    if image is None or contour is None:
+        return corner_points
+
+    contour_sorted = sortPointsOnContourOfImage(contour)
+
+    image = np.float32(image)
+    dst = cv2.cornerHarris(image, blockSize, ksize, k)
+    dst = cv2.dilate(dst, None)
+
+    # corner area points
+    corner_area_points = []
+    for y in range(dst.shape[0]):
+        for x in range(dst.shape[1]):
+            if dst[y][x] > 0.1 * dst.max():
+                corner_area_points.append((x, y))
+
+    # corner line points
+    corner_line_points = []
+    for pt in corner_area_points:
+        if contour[pt[1]][pt[0]] == 0.0:
+            corner_line_points.append(pt)
+
+    corner_all_points = merge_corner_lines_to_point(corner_line_points, contour_sorted)
+
+    for pt in corner_all_points:
+        dist_cross = min_distance_point2pointlist(pt, cross_points)
+        dist_end = min_distance_point2pointlist(pt, end_points)
+        if dist_cross < threshold_distance and dist_end > threshold_distance / 3.:
+            corner_points.append(pt)
+
+    return corner_points
+
+
+def getClusterOfCornerPoints(corner_points, cross_points, threshold_distance=30):
+    """
+    Cluster corner points based on the cross points
+    :param corner_points:
+    :param cross_points:
+    :param threshold_distance:
+    :return:
+    """
+    corner_points_cluster = []
+    if corner_points is None or cross_points is None:
+        return corner_points_cluster
+
+    used_index = []
+    for i in range(len(cross_points)):
+        cross_pt = cross_points[i]
+        cluster = []
+        for j in range(len(corner_points)):
+            if j in used_index:
+                continue
+            corner_pt = corner_points[j]
+            dist = math.sqrt((cross_pt[0] - corner_pt[0]) ** 2 + (cross_pt[1] - corner_pt[1]) ** 2)
+            if dist < threshold_distance:
+                cluster.append(corner_pt)
+                used_index.append(j)
+        if cluster:
+            corner_points_cluster.append(cluster)
+    return corner_points_cluster
