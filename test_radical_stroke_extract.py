@@ -28,7 +28,7 @@ print("radicals num: %d" % len(components))
 radicals = components[0]
 radicals = np.array(radicals, dtype=np.uint8)
 
-# sorted the contour points
+# sorted the contour po
 contour_sorted = sortPointsOnContourOfImage(contour)
 contour_rgb = cv2.cvtColor(contour, cv2.COLOR_GRAY2RGB)
 
@@ -77,8 +77,6 @@ print("storkes components num: %d" % len(strokes_components))
 # find region based on the crop lines
 sub_contours = segmentContourBasedOnCornerPoints(contour_sorted, corner_points)
 print("sub contours num: %d" % len(sub_contours))
-
-
 
 for i in range(len(strokes_components)):
     component = strokes_components[i]

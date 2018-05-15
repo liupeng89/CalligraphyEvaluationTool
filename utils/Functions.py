@@ -581,6 +581,47 @@ def splitConnectedComponents(image, connectivity=8):
     return components
 
 
+def getConnectedComponentsOfGrayScale(graysacle, threshold_value=127, connectivity=4):
+    """
+    Get the connected components of character from grayscale with Labeling algorithm.
+    :param graysacle: Grayscale image
+    :param threshold_value: threshold to binary image.
+    :param connectivity: (4, or 8)
+    :return: connected components of grayscale.
+
+    """
+    _, img_bit = cv2.threshold(graysacle.copy(), threshold_value, 255, cv2.THRESH_BINARY)
+
+    img_bit = cv2.bitwise_not(img_bit)
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(img_bit, connectivity)
+    components = []
+    if num_labels == 0:
+        return components
+
+    for i in range(1, num_labels):
+        mask = labels==i
+        mask = np.uint8(mask)
+        fig = getFigFromMask(graysacle, mask)
+        components.append(fig)
+
+    return components
+
+
+def getFigFromMask(grayscale, mask):
+    if grayscale is None or mask is None:
+        return None
+    if grayscale.shape != mask.shape:
+        print("grayscale shape should be same with the maks shape")
+        return None
+    fig = createBlankGrayscaleImage(grayscale)
+    for y in range(mask.shape[0]):
+        for x in range(mask.shape[1]):
+            if mask[y][x] == 1:
+                fig[y][x] = grayscale[y][x]
+    return fig
+
+
+
 def getConnectedComponents(image, connectivity=4):
     """
     Get the connected components of character from image with Labeling algorithm.
@@ -1718,73 +1759,67 @@ def getCropLines(corner_points_cluster):
             print(" tow points")
             crop_lines.append((corner_clt))
         elif len(corner_clt) == 4:
-            # rectangle or diamond (vertical/horizon or pie/na)
-            min_offset = 1000
-            for i in range(len(corner_clt)):
-                pt1 = corner_clt[i]
-                if i == len(corner_clt) - 1:
-                    pt2 = corner_clt[0]
-                else:
-                    pt2 = corner_clt[i + 1]
-                offset = abs(pt1[0] - pt2[0])
-                if offset <= min_offset:
-                    min_offset = offset
-            if min_offset <= 10:
+
+            # based on the y list to detect rectangle or diamond
+            y_list = [corner_clt[0][1], corner_clt[1][1], corner_clt[2][1], corner_clt[3][1]]
+            y_list = sorted(y_list)
+            if y_list[1]-y_list[0] <= 10:
                 print("rectangle")
-                if abs(corner_clt[0][0] - corner_clt[1][0]) <= 10:
-                    crop_lines.append((corner_clt[0], corner_clt[1]))
-                    crop_lines.append((corner_clt[2], corner_clt[3]))
-                    if abs(corner_clt[0][1] - corner_clt[2][1]) <= 10:
-                        crop_lines.append((corner_clt[0], corner_clt[2]))
-                        crop_lines.append((corner_clt[1], corner_clt[3]))
-                    else:
-                        crop_lines.append((corner_clt[0], corner_clt[3]))
-                        crop_lines.append((corner_clt[1], corner_clt[2]))
-                elif abs(corner_clt[0][0] - corner_clt[2][0]) <= 10:
-                    crop_lines.append((corner_clt[0], corner_clt[2]))
-                    crop_lines.append((corner_clt[1], corner_clt[3]))
+                """
+                    P1     P2
+                    P3     P4
+                """
+                P1 = P2 = P3 = P4 = None
+                for i in range(len(corner_clt)):
+                    if corner_clt[i][1] == y_list[0]:
+                        P1 = corner_clt[i]
+                    if corner_clt[i][1] == y_list[1]:
+                        P2 = corner_clt[i]
+                    if corner_clt[i][1] == y_list[2]:
+                        P3 = corner_clt[i]
+                    if corner_clt[i][1] == y_list[3]:
+                        P4 = corner_clt[i]
 
-                    if abs(corner_clt[0][1] - corner_clt[1][1]) <= 10:
-                        crop_lines.append((corner_clt[0], corner_clt[1]))
-                        crop_lines.append((corner_clt[2], corner_clt[3]))
-                    else:
-                        crop_lines.append((corner_clt[0], corner_clt[3]))
-                        crop_lines.append((corner_clt[1], corner_clt[2]))
+                    # P1 / P2
+                if P1[0] >= P2[0]:
+                    # change order of P1 and P2
+                    temp_pt = P2; P2 = P1; P1 = temp_pt
 
+                    # P3 / P4
+                if P3[0] >= P4[0]:
+                    # change order of P3 / P4
+                    temp_pt = P4; P4 = P3; P3 = temp_pt
+
+                crop_lines.append((P1, P2))
+                crop_lines.append((P3, P4))
+                crop_lines.append((P1, P3))
+                crop_lines.append((P2, P4))
             else:
                 print("diamond")
                 """
-                                    P3
-                            P0              P2
-                                    P1
+                    P1
+                P4     P2
+                    P4
                 """
-                P0 = P1 = P2 = P3 = None
-                min_x = min_y = 10000000
-                max_x = max_y = 0
-                for pt in corner_clt:
-                    if pt[0] > max_x:
-                        max_x = pt[0]
-                    if pt[0] < min_x:
-                        min_x = pt[0]
-                    if pt[1] > max_y:
-                        max_y = pt[1]
-                    if pt[1] < min_y:
-                        min_y = pt1[1]
-                print("minx:%d miny:%d maxx:%d maxy:%d" % (min_x, min_y, max_x, max_y))
+                P1 = P2 = P3 = P4 = None
+                for i in range(len(corner_clt)):
+                    if corner_clt[i][1] == y_list[0]:
+                        P1 = corner_clt[i]
+                    if corner_clt[i][1] == y_list[1]:
+                        P2 = corner_clt[i]
+                    if corner_clt[i][1] == y_list[2]:
+                        P4= corner_clt[i]
+                    if corner_clt[i][1] == y_list[3]:
+                        P3 = corner_clt[i]
+                if P4[0] >= P2[0]:
+                    # change order of P2 / P4
+                    curr_pt = P2; P2 = P4; P4 = curr_pt
 
-                for pt in corner_clt:
-                    if pt[0] == min_x:
-                        P0 = pt
-                    elif pt[0] == max_x:
-                        P2 = pt
-                    if pt[1] == min_y:
-                        P3 = pt
-                    elif pt[1] == max_y:
-                        P1 = pt
-                crop_lines.append((P0, P1))
                 crop_lines.append((P1, P2))
                 crop_lines.append((P2, P3))
-                crop_lines.append((P3, P0))
+                crop_lines.append((P3, P4))
+                crop_lines.append((P4, P1))
+
     return crop_lines
 
 def getCropLinesPoints(image, crop_lines):
@@ -1878,3 +1913,92 @@ def getClusterOfCornerPoints(corner_points, cross_points, threshold_distance=30)
         if cluster:
             corner_points_cluster.append(cluster)
     return corner_points_cluster
+
+
+def getCornersPoints(grayscale, contour_img):
+    """
+    Get corners points
+    :param grayscale:
+    :param contour_img:
+    :return:
+    """
+    corners_points = []
+
+    if grayscale is None or contour_img is None:
+        return corners_points
+
+    # corner area points
+    corner_img = np.float32(grayscale)
+    dst = cv2.cornerHarris(corner_img, 3, 3, 0.04)
+    dst = cv2.dilate(dst, None)
+
+    corners_area_points = []
+    for y in range(dst.shape[0]):
+        for x in range(dst.shape[1]):
+            if dst[y][x] > 0.1 * dst.max():
+                corners_area_points.append((x, y))
+
+    corners_img = createBlankGrayscaleImage(grayscale)
+    for pt in corners_area_points:
+        corners_img[pt[1]][pt[0]] = 0.0
+
+    rectangles = getAllMiniBoundingBoxesOfImage(corners_img)
+
+    corners_area_center_points = []
+    for rect in rectangles:
+        corners_area_center_points.append((rect[0] + int(rect[2] / 2.), rect[1] + int(rect[3] / 2.)))
+
+    for pt in corners_area_center_points:
+        if contour_img[pt[1]][pt[0]] == 0.0:
+            corners_points.append(pt)
+        else:
+            min_dist = 100000
+            min_x = min_y = 0
+            for y in range(contour_img.shape[0]):
+                for x in range(contour_img.shape[1]):
+                    cpt = contour_img[y][x]
+                    if cpt == 0.0:
+                        dist = math.sqrt((x - pt[0]) ** 2 + (y - pt[1]) ** 2)
+                        if dist < min_dist:
+                            min_dist = dist
+                            min_x = x
+                            min_y = y
+            # points on contour
+            corners_points.append((min_x, min_y))
+    return corners_points
+
+
+def getContourImage(grayscale):
+    """
+    Get contour image from grayscale image.
+    :param grayscale:
+    :return:
+    """
+    if grayscale is None:
+        return None
+    contour_img = getContourOfImage(grayscale)
+    contour_img = getSkeletonOfImage(contour_img)
+    contour_img = np.array(contour_img, dtype=np.uint8)
+    return contour_img
+
+
+def getValidCornersPoints(corners_all_points, cross_points, end_points, distance_threshold=20):
+    """
+    Get valid corners points based on the distance of cross points and end_points
+    :param corners_all_points:
+    :param cross_points:
+    :param end_points:
+    :param distance_threshold:
+    :return:
+    """
+    corners_points = []
+    if corners_all_points is None or cross_points is None or len(cross_points) == 0:
+        return corners_points
+
+    for pt in corners_all_points:
+        dist_cross = min_distance_point2pointlist(pt, cross_points)
+        dist_end = min_distance_point2pointlist(pt, end_points)
+        if dist_cross < distance_threshold and dist_end > distance_threshold / 3.:
+            corners_points.append(pt)
+
+    return corners_points
