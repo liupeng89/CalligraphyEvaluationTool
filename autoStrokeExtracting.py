@@ -58,8 +58,15 @@ def autoStrokeExtracting(index, image, threshold_value=200):
     corners_points = getValidCornersPoints(corners_all_points, cross_points, end_points)
     print("corners points num: %d" % len(corners_points))
 
+    if len(corners_points) == 0:
+        print("no corner point")
+        strokes.append(image)
+        return strokes
 
     contour_rgb = cv2.cvtColor(contour_img, cv2.COLOR_GRAY2RGB)
+    contour_gray = cv2.cvtColor(contour_rgb, cv2.COLOR_RGB2GRAY)
+    _, contour_gray = cv2.threshold(contour_gray, 200, 255, cv2.THRESH_BINARY)
+
     for pt in corners_points:
         contour_rgb[pt[1]][pt[0]] = (0, 0, 255)
 
@@ -70,16 +77,18 @@ def autoStrokeExtracting(index, image, threshold_value=200):
     crop_lines = getCropLines(corner_points_cluster)
     for line in crop_lines:
         cv2.line(contour_rgb, line[0], line[1], (0, 255, 0), 1)
+        cv2.line(contour_gray, line[0], line[1], 0, 1)
 
 
     cv2.imshow("radical_%d" % index, contour_rgb)
+    cv2.imshow("radical_gray_%d" % index, contour_gray)
 
     return strokes
 
 
 def main():
-    # 1133壬 2252支 0631叟 0633口 0242俄 0195佛
-    path = "0195佛.jpg"
+    # 1133壬 2252支 0631叟 0633口 0242俄 0195佛 0860善
+    path = "0860善.jpg"
 
     img_rgb = cv2.imread(path)
     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)

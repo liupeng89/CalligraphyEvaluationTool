@@ -189,7 +189,7 @@ for i in range(len(sub_contours_cluster)):
 cv2.imshow("contour", contour)
 cv2.imshow("skeleton", skeleton)
 # cv2.imshow("skeleton rgb", skeleton_rgb)
-# cv2.imshow("img_corner_area", img_corner_area)
+cv2.imshow("img_corner_area", img_corner_area)
 # cv2.imshow("contour_rgb", contour_rgb)
 cv2.imshow("contour_separate_region", contour_separate_region)
 # cv2.imshow("contour_separate_region_bit",  contour_separate_region_bit)

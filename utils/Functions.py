@@ -1758,6 +1758,9 @@ def getCropLines(corner_points_cluster):
         if len(corner_clt) == 2:
             print(" tow points")
             crop_lines.append((corner_clt))
+        elif len(corner_clt) == 1:
+            print("One corner point")
+
         elif len(corner_clt) == 4:
 
             # based on the y list to detect rectangle or diamond
