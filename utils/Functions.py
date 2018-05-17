@@ -1981,6 +1981,7 @@ def getContourImage(grayscale):
         return None
     contour_img = getContourOfImage(grayscale)
     contour_img = getSkeletonOfImage(contour_img)
+    contour_img = removeBreakPointsOfContour(contour_img)
     contour_img = np.array(contour_img, dtype=np.uint8)
     return contour_img
 
@@ -2005,3 +2006,50 @@ def getValidCornersPoints(corners_all_points, cross_points, end_points, distance
             corners_points.append(pt)
 
     return corners_points
+
+
+def getDistanceBetweenPointAndComponent(pt, component):
+    """
+    Calculate the min distance between point and component.
+    :param pt:
+    :param component: binary image
+    :return:
+    """
+    if pt is None or component is None:
+        return -1
+    # min distance between pt and component
+    min_distance = 100000
+    for y in range(component.shape[0]):
+        for x in range(component.shape[1]):
+            if component[y][x] == 0.0:
+                dist = math.sqrt((pt[0]-x)**2 + (pt[1]-y)**2)
+                if dist < min_distance:
+                    min_distance = dist
+
+    return min_distance
+
+
+def isIndependentCropLines(part_lines):
+    """
+    Check independect of part lines.
+    :param part_lines:
+    :return:
+    """
+    if part_lines is None or len(part_lines) == 0:
+        return False
+    if len(part_lines) == 1:
+        return True
+
+    is_independent = True
+    for i in range(len(part_lines)):
+        line1 = part_lines[i]
+
+        for j in range(len(part_lines)):
+            if i == j:
+                continue
+            line2 = part_lines[j]
+
+            if line1[0] == line2[0] or line1[0] == line2[1] or line1[1] == line2[0] or line1[1] == line2[1]:
+                is_independent = False
+
+    return is_independent

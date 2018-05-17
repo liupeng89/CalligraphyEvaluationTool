@@ -10,7 +10,8 @@ from utils.Functions import getConnectedComponents, getContourOfImage, getSkelet
                             getLinePoints, getBreakPointsFromContour, merge_corner_lines_to_point, getCropLines, \
                             getCornerPointsOfImage, getClusterOfCornerPoints, getCropLinesPoints, \
                             getConnectedComponentsOfGrayScale, getAllMiniBoundingBoxesOfImage, getCornersPoints, \
-                            getContourImage, getValidCornersPoints
+                            getContourImage, getValidCornersPoints, getDistanceBetweenPointAndComponent, \
+                            isIndependentCropLines
 
 
 def autoStrokeExtracting(index, image, threshold_value=200):
@@ -79,16 +80,104 @@ def autoStrokeExtracting(index, image, threshold_value=200):
         cv2.line(contour_rgb, line[0], line[1], (0, 255, 0), 1)
         cv2.line(contour_gray, line[0], line[1], 0, 1)
 
+    # split contour to components
+    ret, labels = cv2.connectedComponents(contour_gray, connectivity=4)
+    components = []
+    for r in range(1, ret):
+        img_ = createBlankGrayscaleImage(contour_gray)
+        for y in range(contour_gray.shape[0]):
+            for x in range(contour_gray.shape[1]):
+                if labels[y][x] == r:
+                    img_[y][x] = 0.0
+        if img_[0][0] != 0.0:
+            components.append(img_)
+
+    print("components num : %d" % len(components))
+    used_components = []
+
+    # merge contour to components
+    for i in range(len(components)):
+        merge_points = []
+        for y in range(1, contour_gray.shape[0]-1):
+            for x in range(1, contour_gray.shape[1]-1):
+                if contour_gray[y][x] == 0.0:
+                    # 4 nearby pixels should be black in components
+                    if components[i][y-1][x] == 0.0 or components[i][y][x+1] == 0.0 or components[i][y+1][x] == 0.0 or \
+                            components[i][y][x-1] == 0.0:
+                        merge_points.append((x, y))
+        for pt in merge_points:
+            components[i][pt[1]][pt[0]] = 0.0
+    # merge cropping lines on the components
+    for i in range(len(components)):
+        for line in crop_lines:
+
+            dist_startpt = getDistanceBetweenPointAndComponent(line[0], components[i])
+            print("dist startpt:%f" % dist_startpt)
+            dist_endpt = getDistanceBetweenPointAndComponent(line[1], components[i])
+            print("dist end pt: %f" % dist_endpt)
+
+            if dist_startpt < 3 and dist_endpt < 3:
+                cv2.line(components[i], line[0], line[1], 0, 1)
+
+    # find overlap region components
+    overlap_components = []
+    for i in range(len(components)):
+        part = components[i]
+        part_lines = []
+        for line in crop_lines:
+            if part[line[0][1]][line[0][0]] == 0.0 and part[line[1][1]][line[1][0]] == 0.0:
+                part_lines.append(line)
+        # check number of lines == 4 and cross each other
+        if len(part_lines) == 4:
+            pass
+
+
+
+
+
+
+    # cluster components based on the cropping lines
+    for i in range(len(components)):
+        part = components[i]
+
+        part_lines = [] # used to detect overlap region components.
+
+        # find single part is stroke
+        is_single = True
+        for line in crop_lines:
+            x1 = line[0][0]; y1 = line[0][1]
+            x2 = line[1][0]; y2 = line[1][1]
+            if part[y1][x1] == 0.0 and part[y2][x2] != 0.0 or part[y1][x1] != 0.0 and part[y2][x2] == 0.0:
+                is_single = False
+                break
+            if part[y1][x1] == 0.0 and part[y2][x2] == 0.0:
+                part_lines.append(line)
+        print("part lines num: %d" % len(part_lines))
+        if is_single and isIndependentCropLines(part_lines):
+            strokes.append(part)
+            used_components.append(i)
+
+    print("single stroke num: %d" % len(strokes))
+    print("used components num: %d" % len(used_components))
+    print(used_components)
+
+    # cluster components based on the cropping lines
+
+
+
 
     cv2.imshow("radical_%d" % index, contour_rgb)
     cv2.imshow("radical_gray_%d" % index, contour_gray)
+
+    for i in range(len(components)):
+        cv2.imshow("ra_%d_com_%d" % (index, i), components[i])
 
     return strokes
 
 
 def main():
     # 1133壬 2252支 0631叟 0633口 0242俄 0195佛 0860善
-    path = "0860善.jpg"
+    path = "0631叟.jpg"
 
     img_rgb = cv2.imread(path)
     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
@@ -120,8 +209,8 @@ def main():
 
     # cv2.imshow("img gray", img_gray)
     #
-    # for i in range(len(components)):
-    #     cv2.imshow("stroke_%d"%i, components[i])
+    for i in range(len(total_strokes)):
+        cv2.imshow("stroke_%d"%i, total_strokes[i])
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
