@@ -2053,3 +2053,21 @@ def isIndependentCropLines(part_lines):
                 is_independent = False
 
     return is_independent
+
+
+def mergeBkAndComponent(bk, component):
+    """
+    Merge bk image and component image.
+    :param bk:
+    :param component:
+    :return:
+    """
+    if bk is None or component is None:
+        return None
+
+    for y in range(component.shape[0]):
+        for x in range(component.shape[1]):
+            if component[y][x] == 0.0:
+                bk[y][x] = 0.0
+
+    return bk

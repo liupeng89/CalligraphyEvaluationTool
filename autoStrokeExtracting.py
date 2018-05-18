@@ -11,7 +11,7 @@ from utils.Functions import getConnectedComponents, getContourOfImage, getSkelet
                             getCornerPointsOfImage, getClusterOfCornerPoints, getCropLinesPoints, \
                             getConnectedComponentsOfGrayScale, getAllMiniBoundingBoxesOfImage, getCornersPoints, \
                             getContourImage, getValidCornersPoints, getDistanceBetweenPointAndComponent, \
-                            isIndependentCropLines
+                            isIndependentCropLines, mergeBkAndComponent
 
 
 def autoStrokeExtracting(index, image, threshold_value=200):
@@ -94,6 +94,7 @@ def autoStrokeExtracting(index, image, threshold_value=200):
 
     print("components num : %d" % len(components))
     used_components = []
+    component_line_relation = {}  # {component_id: [line_id1, line_id2]}
 
     # merge contour to components
     for i in range(len(components)):
@@ -108,33 +109,48 @@ def autoStrokeExtracting(index, image, threshold_value=200):
         for pt in merge_points:
             components[i][pt[1]][pt[0]] = 0.0
     # merge cropping lines on the components
-    for i in range(len(components)):
-        for line in crop_lines:
-
-            dist_startpt = getDistanceBetweenPointAndComponent(line[0], components[i])
+    for i in range(len(crop_lines)):
+        components_id = []
+        line = crop_lines[i]
+        for j in range(len(components)):
+            dist_startpt = getDistanceBetweenPointAndComponent(line[0], components[j])
             print("dist startpt:%f" % dist_startpt)
-            dist_endpt = getDistanceBetweenPointAndComponent(line[1], components[i])
+            dist_endpt = getDistanceBetweenPointAndComponent(line[1], components[j])
             print("dist end pt: %f" % dist_endpt)
 
             if dist_startpt < 3 and dist_endpt < 3:
-                cv2.line(components[i], line[0], line[1], 0, 1)
+                cv2.line(components[j], line[0], line[1], 0, 1)
+                components_id.append(j)
+
+            if len(components_id) >= 2:
+                break
 
     # find overlap region components
     overlap_components = []
     for i in range(len(components)):
         part = components[i]
         part_lines = []
-        for line in crop_lines:
+        part_lines_id = []
+        for j in range(len(crop_lines)):
+            line = crop_lines[j]
             if part[line[0][1]][line[0][0]] == 0.0 and part[line[1][1]][line[1][0]] == 0.0:
                 part_lines.append(line)
+                part_lines_id.append(j)
+
         # check number of lines == 4 and cross each other
         if len(part_lines) == 4:
-            pass
+            points_set = set()
+            for line in part_lines:
+                points_set.add(line[0])
+                points_set.add(line[1])
+            if len(points_set) == 4:
+                # only 4 points
+                overlap_components.append(part)
+                used_components.append(i)
+                component_line_relation[i] = part_lines_id
 
-
-
-
-
+    print("overlap components num: %d" % len(overlap_components))
+    print(component_line_relation)
 
     # cluster components based on the cropping lines
     for i in range(len(components)):
@@ -162,22 +178,77 @@ def autoStrokeExtracting(index, image, threshold_value=200):
     print(used_components)
 
     # cluster components based on the cropping lines
+    for i in range(len(components)):
+        if i in used_components:
+            continue
+        # find corresponding crop lines
+        lines_id = []
+        for j in range(len(crop_lines)):
+            line = crop_lines[j]
+            if components[i][line[0][1]][line[0][0]] == 0.0 and components[i][line[1][1]][line[1][0]] != 0.0:
+                lines_id.append(j)
+            if components[i][line[0][1]][line[0][0]] != 0.0 and components[i][line[1][1]][line[1][0]] == 0.0:
+                lines_id.append(j)
 
+        if len(lines_id) == 0:
+            continue
+        component_line_relation[i] = lines_id
+        used_components.append(i)
 
+    print(component_line_relation)
+
+    # cluster components based on the relations and merge those related components
+    clusters = []
+    for k1, v1 in component_line_relation.items():
+
+        cluster = [k1]; value_sets = [set(v1)]
+
+        for k2, v2 in component_line_relation.items():
+            is_related = True
+            for value in value_sets:
+                if not value.intersection(set(v2)):
+                    is_related = False
+                    break
+            if is_related and k2 not in cluster:
+                cluster.append(k2)
+                value_sets.append(set(v2))
+        cluster = sorted(cluster)
+        if cluster not in clusters:
+            clusters.append(cluster)
+
+    print(clusters)
+
+    # merge components based on the cluster
+    for i in range(len(clusters)):
+        cluster = clusters[i]
+
+        bk = createBlankGrayscaleImage(image)
+
+        for clt in cluster:
+            bk = mergeBkAndComponent(bk, components[clt])
+
+        # add to strokes
+        strokes.append(bk)
 
 
     cv2.imshow("radical_%d" % index, contour_rgb)
     cv2.imshow("radical_gray_%d" % index, contour_gray)
 
+    for i in range(len(overlap_components)):
+        cv2.imshow("over_%d_com_%d" % (index, i), overlap_components[i])
+
     for i in range(len(components)):
         cv2.imshow("ra_%d_com_%d" % (index, i), components[i])
+
+    for i in range(len(strokes)):
+        cv2.imshow("ra_%d_stroke_%d" % (index, i), strokes[i])
 
     return strokes
 
 
 def main():
-    # 1133壬 2252支 0631叟 0633口 0242俄 0195佛 0860善
-    path = "0631叟.jpg"
+    # 1133壬 2252支 0631叟 0633口 0242俄 0195佛 0860善 0059乘 0098亩
+    path = "0098亩.jpg"
 
     img_rgb = cv2.imread(path)
     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
