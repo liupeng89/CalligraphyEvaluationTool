@@ -56,7 +56,7 @@ def autoStrokeExtracting(index, image, threshold_value=200):
 
     # corner area points
     corners_all_points = getCornersPoints(image.copy(), contour_img)
-    corners_points = getValidCornersPoints(corners_all_points, cross_points, end_points)
+    corners_points = getValidCornersPoints(corners_all_points, cross_points, end_points, distance_threshold=30)
     print("corners points num: %d" % len(corners_points))
 
     if len(corners_points) == 0:
@@ -72,7 +72,7 @@ def autoStrokeExtracting(index, image, threshold_value=200):
         contour_rgb[pt[1]][pt[0]] = (0, 0, 255)
 
     # cluster corners points based on the cross point
-    dist_threshold = 30
+    dist_threshold = 40
     corner_points_cluster = getClusterOfCornerPoints(corners_points, cross_points)
 
     crop_lines = getCropLines(corner_points_cluster)
@@ -155,7 +155,6 @@ def autoStrokeExtracting(index, image, threshold_value=200):
     # cluster components based on the cropping lines
     for i in range(len(components)):
         part = components[i]
-
         part_lines = [] # used to detect overlap region components.
 
         # find single part is stroke
@@ -168,14 +167,13 @@ def autoStrokeExtracting(index, image, threshold_value=200):
                 break
             if part[y1][x1] == 0.0 and part[y2][x2] == 0.0:
                 part_lines.append(line)
-        print("part lines num: %d" % len(part_lines))
+
         if is_single and isIndependentCropLines(part_lines):
             strokes.append(part)
             used_components.append(i)
 
     print("single stroke num: %d" % len(strokes))
     print("used components num: %d" % len(used_components))
-    print(used_components)
 
     # cluster components based on the cropping lines
     for i in range(len(components)):
@@ -194,8 +192,6 @@ def autoStrokeExtracting(index, image, threshold_value=200):
             continue
         component_line_relation[i] = lines_id
         used_components.append(i)
-
-    print(component_line_relation)
 
     # cluster components based on the relations and merge those related components
     clusters = []
@@ -221,7 +217,6 @@ def autoStrokeExtracting(index, image, threshold_value=200):
     # merge components based on the cluster
     for i in range(len(clusters)):
         cluster = clusters[i]
-
         bk = createBlankGrayscaleImage(image)
 
         for clt in cluster:
@@ -230,25 +225,24 @@ def autoStrokeExtracting(index, image, threshold_value=200):
         # add to strokes
         strokes.append(bk)
 
-
     cv2.imshow("radical_%d" % index, contour_rgb)
     cv2.imshow("radical_gray_%d" % index, contour_gray)
 
-    for i in range(len(overlap_components)):
-        cv2.imshow("over_%d_com_%d" % (index, i), overlap_components[i])
+    # for i in range(len(overlap_components)):
+    #     cv2.imshow("over_%d_com_%d" % (index, i), overlap_components[i])
 
-    for i in range(len(components)):
-        cv2.imshow("ra_%d_com_%d" % (index, i), components[i])
+    # for i in range(len(components)):
+    #     cv2.imshow("ra_%d_com_%d" % (index, i), components[i])
 
-    for i in range(len(strokes)):
-        cv2.imshow("ra_%d_stroke_%d" % (index, i), strokes[i])
+    # for i in range(len(strokes)):
+    #     cv2.imshow("ra_%d_stroke_%d" % (index, i), strokes[i])
 
     return strokes
 
 
 def main():
     # 1133壬 2252支 0631叟 0633口 0242俄 0195佛 0860善 0059乘 0098亩
-    path = "0098亩.jpg"
+    path = "2252支.jpg"
 
     img_rgb = cv2.imread(path)
     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
@@ -278,8 +272,7 @@ def main():
         else:
             total_strokes += radical_strokes
 
-    # cv2.imshow("img gray", img_gray)
-    #
+    # display strokes
     for i in range(len(total_strokes)):
         cv2.imshow("stroke_%d"%i, total_strokes[i])
 

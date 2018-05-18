@@ -1756,7 +1756,7 @@ def getCropLines(corner_points_cluster):
     for i in range(len(corner_points_cluster)):
         corner_clt = corner_points_cluster[i]
         if len(corner_clt) == 2:
-            print(" tow points")
+            print("tow points")
             crop_lines.append((corner_clt))
         elif len(corner_clt) == 1:
             print("One corner point")
@@ -1932,7 +1932,7 @@ def getCornersPoints(grayscale, contour_img):
 
     # corner area points
     corner_img = np.float32(grayscale)
-    dst = cv2.cornerHarris(corner_img, 3, 3, 0.04)
+    dst = cv2.cornerHarris(corner_img, 2, 3, 0.04)
     dst = cv2.dilate(dst, None)
 
     corners_area_points = []

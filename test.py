@@ -90,28 +90,54 @@
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()
 
-strokes = []
+# strokes = []
+#
+# component_line_relation = {5: [2, 3, 4, 5], 10: [8, 9, 10, 11], 0: [4, 5], 1: [2, 3], 6: [2, 3], 7: [4, 5], 8: [9, 11], 9: [8, 10], 11: [8, 10], 12: [9, 11]}
+# print(component_line_relation)
+#
+# clusters = []
+# for k1, v1 in component_line_relation.items():
+#
+#     cluster = [k1]
+#     value_sets = [set(v1)]
+#
+#     for k2, v2 in component_line_relation.items():
+#         is_related = True
+#         for value in value_sets:
+#             if not value.intersection(set(v2)):
+#                 is_related = False
+#                 break
+#         if is_related and k2 not in cluster:
+#             cluster.append(k2)
+#             value_sets.append(set(v2))
+#     cluster = sorted(cluster)
+#     if cluster not in clusters:
+#         clusters.append(cluster)
+#
+# print(clusters)
+import cv2
+import numpy as np
 
-component_line_relation = {5: [2, 3, 4, 5], 10: [8, 9, 10, 11], 0: [4, 5], 1: [2, 3], 6: [2, 3], 7: [4, 5], 8: [9, 11], 9: [8, 10], 11: [8, 10], 12: [9, 11]}
-print(component_line_relation)
+path = "2252支.jpg"
 
-clusters = []
-for k1, v1 in component_line_relation.items():
+img = cv2.imread(path, 0)
+img_rgb = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 
-    cluster = [k1]
-    value_sets = [set(v1)]
+corner_img = np.float32(img)
+dst = cv2.cornerHarris(corner_img, 2, 3, 0.04)
+dst = cv2.dilate(dst, None)
 
-    for k2, v2 in component_line_relation.items():
-        is_related = True
-        for value in value_sets:
-            if not value.intersection(set(v2)):
-                is_related = False
-                break
-        if is_related and k2 not in cluster:
-            cluster.append(k2)
-            value_sets.append(set(v2))
-    cluster = sorted(cluster)
-    if cluster not in clusters:
-        clusters.append(cluster)
+corners_area_points = []
+for y in range(dst.shape[0]):
+    for x in range(dst.shape[1]):
+        if dst[y][x] > 0.1 * dst.max():
+            corners_area_points.append((x, y))
 
-print(clusters)
+
+for pt in corners_area_points:
+    img_rgb[pt[1]][pt[0]] = (0, 0, 255)
+
+cv2.imshow("rgb", img_rgb)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
