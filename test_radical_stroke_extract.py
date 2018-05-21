@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 from utils.Functions import getConnectedComponents, getContourOfImage, getSkeletonOfImage, removeBreakPointsOfContour, \
-                            removeBranchOfSkeletonLine, removeBranchOfSkeleton, getEndPointsOfSkeletonLine, \
+                            removeBranchOfSkeletonLine, removeExtraBranchesOfSkeleton, getEndPointsOfSkeletonLine, \
                           getCrossPointsOfSkeletonLine, sortPointsOnContourOfImage, min_distance_point2pointlist, \
                             getNumberOfValidPixels, segmentContourBasedOnCornerPoints, createBlankGrayscaleImage, \
                             getLinePoints, getBreakPointsFromContour, merge_corner_lines_to_point, getCropLines, \
@@ -35,7 +35,7 @@ contour_rgb = cv2.cvtColor(contour, cv2.COLOR_GRAY2RGB)
 # # skeleton
 skeleton = getSkeletonOfImage(radicals)
 # # remove extra branches
-skeleton = removeBranchOfSkeleton(skeleton, distance_threshod=20)
+skeleton = removeExtraBranchesOfSkeleton(skeleton, distance_threshod=20)
 #
 end_points = getEndPointsOfSkeletonLine(skeleton)
 cross_points = getCrossPointsOfSkeletonLine(skeleton)

@@ -4,8 +4,8 @@ import numpy as np
 import math
 
 from utils.Functions import getConnectedComponents, getContourOfImage, getSkeletonOfImage, removeBreakPointsOfContour, \
-                            removeBranchOfSkeletonLine, removeBranchOfSkeleton, getEndPointsOfSkeletonLine, \
-                          getCrossPointsOfSkeletonLine, sortPointsOnContourOfImage, min_distance_point2pointlist, \
+                            removeBranchOfSkeletonLine, removeExtraBranchesOfSkeleton, getEndPointsOfSkeletonLine, \
+                            getCrossPointsOfSkeletonLine, sortPointsOnContourOfImage, min_distance_point2pointlist, \
                             getNumberOfValidPixels, segmentContourBasedOnCornerPoints, createBlankGrayscaleImage, \
                             getLinePoints, getBreakPointsFromContour, merge_corner_lines_to_point, getCropLines, \
                             getCornerPointsOfImage, getClusterOfCornerPoints, getCropLinesPoints, \
@@ -24,9 +24,9 @@ def autoStrokeExtracting(index, image, threshold_value=200):
     if image is None:
         return strokes
 
-    # get connected components
+    # get connected components from the grayscale image, not for the binary image.
     contour_img = getContourImage(image)
-    contours = getConnectedComponents(contour_img)
+    contours = getConnectedComponents(contour_img)  # no holes, num=1, holes exist, num >= 2
     print("contours num: %d" % len(contours))
 
     corners_points_sorted = []
@@ -41,10 +41,11 @@ def autoStrokeExtracting(index, image, threshold_value=200):
     # grayscale image to binary image
     _, img_bit = cv2.threshold(image, threshold_value, 255, cv2.THRESH_BINARY)
 
-    # skeleton
+    # skeleton image of width 1 pixel of binray image
     skeleton_img = getSkeletonOfImage(img_bit)
-    end_points = getEndPointsOfSkeletonLine(skeleton_img)
-    cross_points = getCrossPointsOfSkeletonLine(skeleton_img)
+    skeleton_img = removeExtraBranchesOfSkeleton(skeleton_img)
+    end_points = getEndPointsOfSkeletonLine(skeleton_img)   # end points
+    cross_points = getCrossPointsOfSkeletonLine(skeleton_img)   # croiss points
 
     print("end points num: %d" % len(end_points))
     print("cross points num: %d" % len(cross_points))
@@ -72,10 +73,10 @@ def autoStrokeExtracting(index, image, threshold_value=200):
         contour_rgb[pt[1]][pt[0]] = (0, 0, 255)
 
     # cluster corners points based on the cross point
-    dist_threshold = 40
     corner_points_cluster = getClusterOfCornerPoints(corners_points, cross_points)
 
     crop_lines = getCropLines(corner_points_cluster)
+
     for line in crop_lines:
         cv2.line(contour_rgb, line[0], line[1], (0, 255, 0), 1)
         cv2.line(contour_gray, line[0], line[1], 0, 1)

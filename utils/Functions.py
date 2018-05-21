@@ -835,9 +835,8 @@ def getEndPointsOfSkeletonLine(image):
     for y in range(1, image.shape[0] - 1):
         for x in range(1, image.shape[1] - 1):
             if image[y][x] == 0.0:
-                # black points
+                # black points number
                 black_num = getNumberOfValidPixels(image, x, y)
-
                 # end points
                 if black_num == 1:
                     end_points.append((x, y))
@@ -917,7 +916,7 @@ def getCrossPointsOfSkeletonLine(image):
     return cross_points_no_extra
 
 
-def removeBranchOfSkeleton(image, distance_threshod=20):
+def removeExtraBranchesOfSkeleton(image, distance_threshod=20):
     """
     Remove extra branches of skeleton image
     :param image: skeleton grayscale image with 1-pixel width line
@@ -1760,6 +1759,7 @@ def getCropLines(corner_points_cluster):
             crop_lines.append((corner_clt))
         elif len(corner_clt) == 1:
             print("One corner point")
+
 
         elif len(corner_clt) == 4:
 
