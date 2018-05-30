@@ -83,7 +83,7 @@ class Ui_MainWindow(object):
         self.image_gview.setObjectName("image_gview")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.verticalLayoutWidget_2 = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget_2.setGeometry(QtCore.QRect(20, 330, 201, 291))
+        self.verticalLayoutWidget_2.setGeometry(QtCore.QRect(20, 350, 201, 271))
         self.verticalLayoutWidget_2.setObjectName("verticalLayoutWidget_2")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_2)
         self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
@@ -108,7 +108,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Chinese Calligraphy Segmentation Tool"))
         self.open_btn.setText(_translate("MainWindow", "Open"))
         self.grayscale_btn.setText(_translate("MainWindow", "Grayscale"))
         self.convert_btn.setText(_translate("MainWindow", "Convert"))

@@ -11,7 +11,7 @@ from utils.Functions import getConnectedComponents, getContourOfImage, getSkelet
                             getCornerPointsOfImage, getClusterOfCornerPoints, getCropLinesPoints, \
                             getConnectedComponentsOfGrayScale, getAllMiniBoundingBoxesOfImage, getCornersPoints, \
                             getContourImage, getValidCornersPoints, getDistanceBetweenPointAndComponent, \
-                            isIndependentCropLines, mergeBkAndComponent
+                            isIndependentCropLines, mergeBkAndComponent, isValidComponent
 
 
 def autoStrokeExtracting(index, image, threshold_value=200):
@@ -56,7 +56,7 @@ def autoStrokeExtracting(index, image, threshold_value=200):
         return strokes
 
     # corner area points
-    corners_all_points = getCornersPoints(image.copy(), contour_img)
+    corners_all_points = getCornersPoints(image.copy(), contour_img, blockSize=3, ksize=3, k=0.04)
     corners_points = getValidCornersPoints(corners_all_points, cross_points, end_points, distance_threshold=30)
     print("corners points num: %d" % len(corners_points))
 
@@ -75,6 +75,7 @@ def autoStrokeExtracting(index, image, threshold_value=200):
     # cluster corners points based on the cross point
     corner_points_cluster = getClusterOfCornerPoints(corners_points, cross_points)
 
+    # cropping lines based on the corner points
     crop_lines = getCropLines(corner_points_cluster)
 
     for line in crop_lines:
@@ -90,7 +91,7 @@ def autoStrokeExtracting(index, image, threshold_value=200):
             for x in range(contour_gray.shape[1]):
                 if labels[y][x] == r:
                     img_[y][x] = 0.0
-        if img_[0][0] != 0.0:
+        if img_[0][0] != 0.0 and isValidComponent(img_, img_bit):
             components.append(img_)
 
     print("components num : %d" % len(components))
@@ -115,9 +116,9 @@ def autoStrokeExtracting(index, image, threshold_value=200):
         line = crop_lines[i]
         for j in range(len(components)):
             dist_startpt = getDistanceBetweenPointAndComponent(line[0], components[j])
-            print("dist startpt:%f" % dist_startpt)
+            # print("dist startpt:%f" % dist_startpt)
             dist_endpt = getDistanceBetweenPointAndComponent(line[1], components[j])
-            print("dist end pt: %f" % dist_endpt)
+            # print("dist end pt: %f" % dist_endpt)
 
             if dist_startpt < 3 and dist_endpt < 3:
                 cv2.line(components[j], line[0], line[1], 0, 1)
@@ -226,24 +227,21 @@ def autoStrokeExtracting(index, image, threshold_value=200):
         # add to strokes
         strokes.append(bk)
 
+    # check the stroke is valid
+    for i in range(len(strokes)):
+        stroke = strokes[i]
+
+
+
     cv2.imshow("radical_%d" % index, contour_rgb)
     cv2.imshow("radical_gray_%d" % index, contour_gray)
-
-    # for i in range(len(overlap_components)):
-    #     cv2.imshow("over_%d_com_%d" % (index, i), overlap_components[i])
-
-    # for i in range(len(components)):
-    #     cv2.imshow("ra_%d_com_%d" % (index, i), components[i])
-
-    # for i in range(len(strokes)):
-    #     cv2.imshow("ra_%d_stroke_%d" % (index, i), strokes[i])
 
     return strokes
 
 
 def main():
-    # 1133壬 2252支 0631叟 0633口 0242俄 0195佛 0860善 0059乘 0098亩
-    path = "2252支.jpg"
+    # 1133壬 2252支 0631叟 0633口 0242俄 0195佛 0860善 0059乘 0098亩 0034串
+    path = "0034串.jpg"
 
     img_rgb = cv2.imread(path)
     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)

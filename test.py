@@ -118,14 +118,27 @@
 import cv2
 import numpy as np
 
-path = "2252支.jpg"
+from utils.Functions import getCornersPoints, getContourImage, getSkeletonOfImage, removeExtraBranchesOfSkeleton, \
+                            getEndPointsOfSkeletonLine, getCrossPointsOfSkeletonLine, getValidCornersPoints
+
+path = "0034串.jpg"
+
 
 img = cv2.imread(path, 0)
 img_rgb = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 
+contour_img = getContourImage(img)
+
 corner_img = np.float32(img)
-dst = cv2.cornerHarris(corner_img, 2, 3, 0.04)
+dst = cv2.cornerHarris(corner_img, 3, 3, 0.04)
 dst = cv2.dilate(dst, None)
+
+_, img = cv2.threshold(img, 200, 255, cv2.THRESH_BINARY)
+
+skeleton_img = getSkeletonOfImage(img)
+# skeleton_img = removeExtraBranchesOfSkeleton(skeleton_img)
+end_points = getEndPointsOfSkeletonLine(skeleton_img)  # end points
+cross_points = getCrossPointsOfSkeletonLine(skeleton_img)  # crois
 
 corners_area_points = []
 for y in range(dst.shape[0]):
@@ -137,7 +150,15 @@ for y in range(dst.shape[0]):
 for pt in corners_area_points:
     img_rgb[pt[1]][pt[0]] = (0, 0, 255)
 
+corner_points = getCornersPoints(img, contour_img, 3, 3, 0.04)
+corner_points = getValidCornersPoints(corner_points, cross_points, end_points, distance_threshold=45)
+print("corner point num: %d" % len(corner_points))
+
+for pt in corner_points:
+    img_rgb[pt[1]][pt[0]] = (0, 255, 0)
+
 cv2.imshow("rgb", img_rgb)
+cv2.imshow("skeleton", skeleton_img)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()

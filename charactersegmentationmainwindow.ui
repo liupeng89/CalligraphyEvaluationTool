@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Chinese Calligraphy Segmentation Tool</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QWidget" name="verticalLayoutWidget">
@@ -163,9 +163,9 @@ Distance:</string>
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>330</y>
+      <y>350</y>
       <width>201</width>
-      <height>291</height>
+      <height>271</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_2">

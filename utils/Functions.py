@@ -1759,10 +1759,8 @@ def getCropLines(corner_points_cluster):
             crop_lines.append((corner_clt))
         elif len(corner_clt) == 1:
             print("One corner point")
-
-
         elif len(corner_clt) == 4:
-
+            print(corner_clt)
             # based on the y list to detect rectangle or diamond
             y_list = [corner_clt[0][1], corner_clt[1][1], corner_clt[2][1], corner_clt[3][1]]
             y_list = sorted(y_list)
@@ -1805,15 +1803,17 @@ def getCropLines(corner_points_cluster):
                     P4
                 """
                 P1 = P2 = P3 = P4 = None
+                used_point_index = []
                 for i in range(len(corner_clt)):
-                    if corner_clt[i][1] == y_list[0]:
-                        P1 = corner_clt[i]
-                    if corner_clt[i][1] == y_list[1]:
-                        P2 = corner_clt[i]
-                    if corner_clt[i][1] == y_list[2]:
-                        P4= corner_clt[i]
-                    if corner_clt[i][1] == y_list[3]:
-                        P3 = corner_clt[i]
+                    if corner_clt[i][1] == y_list[0] and 0 not in used_point_index:
+                        P1 = corner_clt[i]; used_point_index.append(0)
+                    elif corner_clt[i][1] == y_list[1] and 1 not in used_point_index:
+                        P2 = corner_clt[i]; used_point_index.append(1)
+                    elif corner_clt[i][1] == y_list[2] and 2 not in used_point_index:
+                        P4= corner_clt[i];  used_point_index.append(2)
+                    elif corner_clt[i][1] == y_list[3] and 3 not in used_point_index:
+                        P3 = corner_clt[i]; used_point_index.append(3)
+
                 if P4[0] >= P2[0]:
                     # change order of P2 / P4
                     curr_pt = P2; P2 = P4; P4 = curr_pt
@@ -1918,7 +1918,7 @@ def getClusterOfCornerPoints(corner_points, cross_points, threshold_distance=30)
     return corner_points_cluster
 
 
-def getCornersPoints(grayscale, contour_img):
+def getCornersPoints(grayscale, contour_img, blockSize=3, ksize=3, k=0.04):
     """
     Get corners points
     :param grayscale:
@@ -1932,7 +1932,7 @@ def getCornersPoints(grayscale, contour_img):
 
     # corner area points
     corner_img = np.float32(grayscale)
-    dst = cv2.cornerHarris(corner_img, 2, 3, 0.04)
+    dst = cv2.cornerHarris(corner_img, blockSize, ksize, k)
     dst = cv2.dilate(dst, None)
 
     corners_area_points = []
@@ -2002,7 +2002,8 @@ def getValidCornersPoints(corners_all_points, cross_points, end_points, distance
     for pt in corners_all_points:
         dist_cross = min_distance_point2pointlist(pt, cross_points)
         dist_end = min_distance_point2pointlist(pt, end_points)
-        if dist_cross < distance_threshold and dist_end > distance_threshold / 3.:
+        if dist_cross < distance_threshold and dist_end > distance_threshold / 4.:
+        # if dist_cross < distance_threshold:
             corners_points.append(pt)
 
     return corners_points
@@ -2071,3 +2072,25 @@ def mergeBkAndComponent(bk, component):
                 bk[y][x] = 0.0
 
     return bk
+
+
+def isValidComponent(component, grayscale):
+    """
+    Check the component is valid or not.
+    :param component:
+    :param grayscale:
+    :return:
+    """
+    num_valid_pixels = 0
+    num_pixels_of_component = 0
+    for y in range(component.shape[0]):
+        for x in range(component.shape[1]):
+            if component[y][x] == 0.0:
+                num_pixels_of_component += 1
+                if component[y][x] == grayscale[y][x]:
+                    num_valid_pixels += 1
+
+    if num_valid_pixels >= 0.8 * num_pixels_of_component:
+        return True
+    else:
+        return False
