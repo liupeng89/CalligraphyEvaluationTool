@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import *
 
 from calligraphyCroppingTool.charactersegmentationmainwindow import Ui_MainWindow
 from utils.Functions import getAllMiniBoundingBoxesOfImage, getCenterOfRectangles, combineRectangles, rgb2qimage
+from calligraphyCroppingTool.tools import filterBoxWithWidth, removeContainedBoxes
 
 
 class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
@@ -24,7 +25,7 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.characters_name = []
 
         # scene
-        self.scene = GraphicsScene()
+        self.scene = QGraphicsScene()
         self.scene.setBackgroundBrush(Qt.gray)
         self.image_gview.setScene(self.scene)
 
@@ -75,8 +76,8 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
             self.temp_image_pix = self.image_pix.copy()
 
             self.scene.addPixmap(self.image_pix)
-            # self.scene.setSceneRect(QRectF())
-            # self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+            self.scene.setSceneRect(QRectF())
+            self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
             self.scene.update()
 
             self.statusbar.showMessage("Open image: %s successed!" % self.image_name)
@@ -102,8 +103,8 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
-        # self.scene.setSceneRect(QRectF())
-        # self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+        self.scene.setSceneRect(QRectF())
+        self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
 
         self.statusbar.showMessage("Grayscale processing successed!")
@@ -129,8 +130,8 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
-        # self.scene.setSceneRect(QRectF())
-        # self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+        self.scene.setSceneRect(QRectF())
+        self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
 
         self.statusbar.showMessage("Conveting color processing successed!")
@@ -160,8 +161,8 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
-        # self.scene.setSceneRect(QRectF())
-        # self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+        self.scene.setSceneRect(QRectF())
+        self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
 
         self.threshold_label.setText(str(binary_threshold))
@@ -188,55 +189,17 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         img_binary = self.image_binary.copy()
 
         boxes = getAllMiniBoundingBoxesOfImage(img_binary)
-        boxes_ = []
-        for box in boxes:
-            if box[2] < width_threshold and box[3] < width_threshold:
-                continue
-            boxes_.append(box)
-
-        del boxes
-        boxes = boxes_.copy()
-        del boxes_
+        # filter boxes with threshold of width
+        boxes = filterBoxWithWidth(boxes, width_threshold)
         print("original boxes len: %d" % len(boxes))
 
         # remove inside rectangles
-        inside_id = []
-        for i in range(len(boxes)):
-            ri_x = boxes[i][0]
-            ri_y = boxes[i][1]
-            ri_w = boxes[i][2]
-            ri_h = boxes[i][3]
-
-            for j in range(len(boxes)):
-                if i == j or j in inside_id:
-                    continue
-                rj_x = boxes[j][0]
-                rj_y = boxes[j][1]
-                rj_w = boxes[j][2]
-                rj_h = boxes[j][3]
-
-                # rect_j  inside rect_i
-                if ri_x <= rj_x and ri_y <= rj_y and ri_x + ri_w >= rj_x + rj_w and ri_y + ri_h >= rj_y + rj_h:
-                    if j not in inside_id:
-                        inside_id.append(j)
-                elif rj_x <= ri_x and rj_y <= ri_y and rj_x + rj_w >= ri_x + ri_w and rj_y + rj_h >= ri_y + ri_h:
-                    if i not in inside_id:
-                        inside_id.append(i)
-
-        print("inside id len: %d" % len(inside_id))
-
-        boxes_noinside = []
-        for i in range(len(boxes)):
-            if i in inside_id:
-                continue
-            boxes_noinside.append(boxes[i])
-        print("no inside boxes len: %d" % len(boxes_noinside))
+        boxes_noinside = removeContainedBoxes(boxes)
 
         # cluster rectangles based on the distance threshold
         lines = []
         for i in range(len(boxes_noinside)):
-            rect_item = []
-            rect_item.append(i)
+            rect_item = [i]
 
             ct_rect_i = getCenterOfRectangles(boxes_noinside[i])
             start_index = i
@@ -250,7 +213,7 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
                 dist = math.sqrt((ct_rect_j[0] - ct_rect_i[0]) ** 2 + (ct_rect_j[1] - ct_rect_i[1]) ** 2)
                 if dist <= dist_threshold:
                     rect_item.append(j)
-                    # cv2.line(img_rgb_no_inside, ct_rect_i, ct_rect_j, (0, 0, 255), 1)
+
                     end_index = j
                     lines.append([start_index, end_index])
             if end_index == start_index:
@@ -298,33 +261,13 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         for i in range(len(rects)):
             new_rect = combineRectangles(boxes_noinside, rects[i])
             # add border of rectangle with 5 pixels
-            new_r_x = 0
-            new_r_y = 0
-            new_r_w = 0
-            new_r_h = 0
-
-            if new_rect[0] - 5 < 0:
-                new_r_x = 0
-            else:
-                new_r_x = new_rect[0] - 5
-
-            if new_rect[1] - 5 < 0:
-                new_r_y = 0
-            else:
-                new_r_y = new_rect[1] - 5
-
-            if new_rect[0] + new_rect[2] + 10 > img_binary.shape[1]:
-                new_r_w = img_binary.shape[1] - new_rect[0]
-            else:
-                new_r_w = new_rect[2] + 10
-
-            if new_rect[1] + new_rect[3] + 10 > img_binary.shape[0]:
-                new_r_h = img_binary.shape[0] - new_rect[0]
-            else:
-                new_r_h = new_rect[3] + 10
+            new_r_x = 0 if new_rect[0]-5 < 0 else new_rect[0]-5
+            new_r_y = 0 if new_rect[1]-5 < 0 else new_rect[1]-5
+            new_r_w = img_binary.shape[1]-new_rect[0] if new_rect[0]+new_rect[2]+10 > img_binary.shape[1] else new_rect[2]+10
+            new_r_h = img_binary.shape[0]-new_rect[0] if new_rect[1]+new_rect[3]+10 > img_binary.shape[0] else new_rect[3]+10
 
             cv2.rectangle(img_rgb, (new_r_x, new_r_y), (new_r_x + new_r_w, new_r_y + new_r_h),
-                          (0, 255, 0), 1)
+                          (255, 0, 0), 1)
             self.image_characters.append((new_r_x, new_r_y, new_r_w, new_r_h))
             self.characters_name.append("character_" + str(i+1))
 
@@ -335,14 +278,14 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         self.temp_image_pix = self.image_pix.copy()
 
         self.scene.addPixmap(self.image_pix)
-        # self.scene.setSceneRect(QRectF())
-        # self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+        self.scene.setSceneRect(QRectF())
+        self.image_gview.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.scene.update()
 
         self.char_slm.setStringList(self.characters_name)
 
         self.statusbar.showMessage("Segmentation processing successed!")
-        del qimg, img_binary, img_rgb, boxes_noinside, boxes, inside_id
+        del qimg, img_binary, img_rgb, boxes_noinside, boxes
 
     def charsListView_clicked(self, qModelIndex):
         """
@@ -405,64 +348,6 @@ class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
         """
         qApp = QApplication.instance()
         sys.exit(qApp.exec_())
-
-
-class GraphicsScene(QGraphicsScene):
-    def __init__(self, parent=None):
-        QGraphicsScene.__init__(self, parent)
-
-        self.lastPoint = QPoint()
-        self.endPoint = QPoint()
-
-        self.points = []
-        self.strokes = []
-        self.T_DISTANCE = 10
-
-    def setOption(self, opt):
-        self.opt = opt
-
-    def mousePressEvent(self, event):
-        """
-        Mouse press clicked!
-        :param event:
-        :return:
-        """
-        pen = QPen(Qt.red)
-        brush = QBrush(Qt.red)
-        x = event.scenePos().x()
-        y = event.scenePos().y()
-
-        if len(self.points) == 0:
-            self.addEllipse(x, y, 2, 2, pen, brush)
-            self.endPoint = event.scenePos()
-        else:
-            x0 = self.points[0][0]
-            y0 = self.points[0][1]
-
-            dist = math.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
-            if dist < self.T_DISTANCE:
-                pen_ = QPen(Qt.green)
-                brush_ = QBrush(Qt.green)
-                self.addEllipse(x0, y0, 2, 2, pen_, brush_)
-                self.endPoint = event.scenePos()
-                x = x0; y = y0
-            else:
-                self.addEllipse(x, y, 4, 4, pen, brush)
-                self.endPoint = event.scenePos()
-        self.points.append((x, y))
-
-    def mouseReleaseEvent(self, event):
-        """
-            Mouse release event!
-        :param event:
-        :return:
-        """
-        pen = QPen(Qt.red)
-
-        if self.lastPoint.x() != 0.0 and self.lastPoint.y() != 0.0:
-            self.addLine(self.endPoint.x(), self.endPoint.y(), self.lastPoint.x(), self.lastPoint.y(), pen)
-
-        self.lastPoint = self.endPoint
 
 
 if __name__ == '__main__':
