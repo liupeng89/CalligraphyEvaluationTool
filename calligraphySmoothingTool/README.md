@@ -1,4 +1,8 @@
-## The procedure of Calligraphy contours smooth of character:
+## Calligraphy smoothing tool
+
+The calligraphy smoothing tool is used to smooth the contours of character in calligraphy. 
+The procedure of contour smoothing is:
+
 
     1. Load original image of RGB;
 
