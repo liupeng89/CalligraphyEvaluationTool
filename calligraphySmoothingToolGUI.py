@@ -8,8 +8,10 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
 from calligraphySmoothingTool.smoothmanuallymainwindow import Ui_MainWindow
-from utils.Functions import getContourOfImage, removeBreakPointsOfContour, getNumberOfValidPixels, \
+
+from utils.Functions import getContourOfImage, removeBreakPointsOfContour, \
                             sortPointsOnContourOfImage, fitCurve, draw_cubic_bezier
+from utils.contours_smoothed_algorithm import autoSmoothContoursOfCharacter
 
 
 class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
@@ -50,7 +52,7 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
 
     def openBtn(self):
         """
-        Open button
+        Open button clicked!
         :return:
         """
         print("Open button clicked!")
@@ -215,6 +217,25 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
         """
         print("Auto-smooth button clicked")
 
+        # max Error
+        max_error = int(self.maxerror_ledit.text())
+
+        img_gray = self.image_gray.copy()
+
+        img_smoothed = autoSmoothContoursOfCharacter(img_gray, bitmap_threshold=127, dist_threshold=30, max_error=max_error)
+        qimg = QImage(img_smoothed.data, img_smoothed.shape[1], img_smoothed.shape[0], img_smoothed.shape[1], \
+                      QImage.Format_Indexed8)
+
+        contour_pix = QPixmap.fromImage(qimg)
+
+        self.scene.addPixmap(contour_pix)
+        self.scene.update()
+
+        self.contour_gray = img_smoothed.copy()
+        self.statusbar.showMessage("Smooth successed!")
+
+        del img_gray, contour_pix, img_smoothed, qimg
+
     def saveBtn(self):
         """
         Save button
@@ -226,22 +247,22 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
         contour_img = self.contour_gray.copy()
 
         # fill the contour with black color
-        smoothed_contour_points = self.smoothed_contour_points.copy()
-        smoothed_contour_points = np.array([smoothed_contour_points], "int32")
-
-        fill_contour_smooth = np.ones(contour_img.shape) * 255
-        fill_contour_smooth = np.array(fill_contour_smooth, dtype=np.uint8)
-        fill_contour_smooth = cv2.fillPoly(fill_contour_smooth, smoothed_contour_points, 0)
+        # smoothed_contour_points = self.smoothed_contour_points.copy()
+        # smoothed_contour_points = np.array([smoothed_contour_points], "int32")
+        #
+        # fill_contour_smooth = np.ones(contour_img.shape) * 255
+        # fill_contour_smooth = np.array(fill_contour_smooth, dtype=np.uint8)
+        # fill_contour_smooth = cv2.fillPoly(fill_contour_smooth, smoothed_contour_points, 0)
 
         # save path
         fileName, _ = QFileDialog.getSaveFileName(self, "save file", QDir.currentPath())
-        cv2.imwrite(fileName, fill_contour_smooth)
+        cv2.imwrite(fileName, contour_img)
 
         self.statusbar.showMessage("Save image successed!")
 
         del contour_img
-        del smoothed_contour_points
-        del fill_contour_smooth
+        # del smoothed_contour_points
+        # del fill_contour_smooth
 
     def exitBtn(self):
         """
@@ -278,8 +299,6 @@ class GraphicsScene(QGraphicsScene):
         self.addEllipse(x, y, 3, 3, pen, brush)
 
         self.points.append((x, y))
-
-
 
 
 if __name__ == '__main__':

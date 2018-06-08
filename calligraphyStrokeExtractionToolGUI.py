@@ -7,7 +7,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
-from strokeExtractionTool.strokeExtractingMainwindow import Ui_MainWindow
+from calligraphyStrokeExtractionTool.strokeExtractingMainwindow import Ui_MainWindow
 from utils.Functions import splitConnectedComponents
 
 
