@@ -667,6 +667,9 @@ def getContourOfImage(image, minVal=100, maxVal=200):
     # invert the color of the edge image (black contour)
     edge = 255 - edge
 
+    # use skeleton alogrpthm to get 1-pixel width
+    edge = getSkeletonOfImage(edge)
+
     return edge
 
 
@@ -702,8 +705,10 @@ def removeBreakPointsOfContour(contour):
                 if num_ == 1:
                     # break points
                     break_points.append((x, y))
-    if len(break_points) % 2 != 0:
-        print("break points should be even number!")
+    print("break points num: %d" % len(break_points))
+    if len(break_points) == 0:
+        return contour
+
     bp_label = []
     for id in range(len(break_points)):
         bp_label.append(0.0)
@@ -1103,7 +1108,7 @@ def sortPointsOnContourOfImage(image, isClockwise=True):
         if start_point:
             break
 
-    print("begin point: " + str(start_point))
+    # print("begin point: " + str(start_point))
 
     # find second points with different direction of clockwise and counter-clockwise
     second_point = None
@@ -1203,7 +1208,7 @@ def draw_cubic_bezier(p1, p2, p3, p4):
 
         points.append((x, y))
 
-        t += 0.01
+        t += 0.001
     return points
 
 
@@ -1399,7 +1404,6 @@ def combineRectangles(rectangles, rect_list):
     new_rect_y0 = rectangles[rect_list[0]][1]
     new_rect_x1 = new_rect_x0 + rectangles[rect_list[0]][2]
     new_rect_y1 = new_rect_y0 + rectangles[rect_list[0]][3]
-
 
     for id in range(1, len(rect_list)):
         print(id)

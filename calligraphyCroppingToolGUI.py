@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import *
 
 from calligraphyCroppingTool.charactersegmentationmainwindow import Ui_MainWindow
 from utils.Functions import getAllMiniBoundingBoxesOfImage, getCenterOfRectangles, combineRectangles, rgb2qimage
-from calligraphyCroppingTool.tools import filterBoxWithWidth, removeContainedBoxes
+from calligraphyCroppingTool.utils import filterBoxWithWidth, removeContainedBoxes
 
 
 class CharacterSegmentationMainWindow(QMainWindow, Ui_MainWindow):
