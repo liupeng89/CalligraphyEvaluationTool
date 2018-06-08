@@ -1,4 +1,4 @@
-The procedure of Calligraphy contours smooth of character:
+## The procedure of Calligraphy contours smooth of character:
 
     1. Load original image of RGB;
 
