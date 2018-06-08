@@ -7,7 +7,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
-from smoothmanuallymainwindow import Ui_MainWindow
+from calligraphySmoothingTool.smoothmanuallymainwindow import Ui_MainWindow
 from utils.Functions import getContourOfImage, removeBreakPointsOfContour, getNumberOfValidPixels, \
                             sortPointsOnContourOfImage, fitCurve, draw_cubic_bezier
 
