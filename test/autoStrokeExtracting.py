@@ -231,8 +231,6 @@ def autoStrokeExtracting(index, image, threshold_value=200):
     for i in range(len(strokes)):
         stroke = strokes[i]
 
-
-
     cv2.imshow("radical_%d" % index, contour_rgb)
     cv2.imshow("radical_gray_%d" % index, contour_gray)
 
@@ -277,7 +275,6 @@ def main():
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
 
 
 if __name__ == '__main__':

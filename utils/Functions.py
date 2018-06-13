@@ -9,6 +9,114 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
 
+def removeShortBranchesOfSkeleton(skeleton, length_threshold=30):
+    """
+    Remove the short branches of skeleton image.
+    :param skeleton:
+    :param length_threshold:
+    :return:
+    """
+    if skeleton is None:
+        return
+
+    # 1. Find the cross points and end points
+    end_points = getEndPointsOfSkeletonLine(skeleton)
+    cross_points = getCrossPointsOfSkeletonLine(skeleton)
+
+    # 2. For each cross points, calculate the distance between it with near by end points. if distance smaller
+    #    than the length_threshold, remove the points begin with end point and end with cross point.
+
+    for cpt in cross_points:
+        for ept in end_points:
+            dist = math.sqrt((cpt[0] - ept[0]) ** 2 + (cpt[1] - ept[1]) ** 2)
+
+            if dist < length_threshold:
+                print("dist: %f" % dist)
+                erased_points = getPointsOnSkeletonSegmentation(skeleton, ept, cpt, cross_points)
+                print("erased points num: %d" % len(erased_points))
+                skeleton = erasePointsOfSkeleton(skeleton, erased_points)
+
+    return skeleton
+
+
+def getPointsOnSkeletonSegmentation(skeleton, start, end, cross_points):
+    """
+    Get points on skeleton segmentation from start point (end_point) to end point (cross_point)
+    :param skeleton:
+    :param start:
+    :param end:
+    :param cross_points: it is used to detect the end of segmentation.
+    :return:
+    """
+    points = []
+    if skeleton is None:
+        return points
+
+    current_pt = next_pt = start
+
+    while True:
+
+        # find the next point in 8-connect points
+        x = current_pt[0]; y = current_pt[1]
+
+        # next point in cross points, should be terminated
+        if (x, y-1) in cross_points or (x+1, y-1) in cross_points or (x+1, y) in cross_points or \
+                (x+1, y+1) in cross_points or (x, y+1) in cross_points or (x-1, y+1) in cross_points or \
+                (x-1, y) in cross_points or (x-1, y-1) in cross_points:
+            break
+
+        # P2
+        if skeleton[y-1][x] == 0.0 and (x, y-1) not in points:
+            next_pt = (x, y-1)
+        # P3
+        elif skeleton[y-1][x+1] == 0.0 and (x+1, y-1) not in points:
+            next_pt = (x+1, y-1)
+        # P4
+        elif skeleton[y][x+1] == 0.0 and (x+1, y) not in points:
+            next_pt = (x+1, y)
+        # P5
+        elif skeleton[y+1][x+1] == 0.0 and (x+1, y+1) not in points:
+            next_pt = (x+1, y+1)
+        # P6
+        elif skeleton[y+1][x] == 0.0 and (x, y+1) not in points:
+            next_pt = (x, y+1)
+        # P7
+        elif skeleton[y+1][x-1] == 0.0 and (x-1, y+1) not in points:
+            next_pt = (x-1, y+1)
+        # P8
+        elif skeleton[y][x-1] == 0.0 and (x-1, y) not in points:
+            next_pt = (x-1, y)
+        # P9
+        elif skeleton[y-1][x-1] == 0.0 and (x-1, y-1) not in points:
+            next_pt = (x-1, y-1)
+
+        # is next point is the cross point:
+
+        points.append(current_pt)
+        current_pt = next_pt
+
+    return points
+
+
+def erasePointsOfSkeleton(skeleton, erased_points):
+    """
+    Earse small and short branches.
+    :param skeleton:
+    :param erased_points:
+    :return:
+    """
+    if skeleton is None:
+        return
+    if erased_points is None or len(erased_points) == 0:
+        print("erased point is None !")
+        return skeleton
+    # erase the points
+    for pt in erased_points:
+        skeleton[pt[1]][pt[0]] = 255
+
+    return skeleton
+
+
 def resizeImages(source, target):
     """
     Resize images of source and target, in order to as much as possible to make the two images the same size.
