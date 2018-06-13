@@ -57,38 +57,39 @@ def getPointsOnSkeletonSegmentation(skeleton, start, end, cross_points):
     while True:
 
         # find the next point in 8-connect points
-        x = current_pt[0]; y = current_pt[1]
+        x = current_pt[0];
+        y = current_pt[1]
 
         # next point in cross points, should be terminated
-        if (x, y-1) in cross_points or (x+1, y-1) in cross_points or (x+1, y) in cross_points or \
-                (x+1, y+1) in cross_points or (x, y+1) in cross_points or (x-1, y+1) in cross_points or \
-                (x-1, y) in cross_points or (x-1, y-1) in cross_points:
+        if (x, y - 1) in cross_points or (x + 1, y - 1) in cross_points or (x + 1, y) in cross_points or \
+                (x + 1, y + 1) in cross_points or (x, y + 1) in cross_points or (x - 1, y + 1) in cross_points or \
+                (x - 1, y) in cross_points or (x - 1, y - 1) in cross_points:
             break
 
         # P2
-        if skeleton[y-1][x] == 0.0 and (x, y-1) not in points:
-            next_pt = (x, y-1)
+        if skeleton[y - 1][x] == 0.0 and (x, y - 1) not in points:
+            next_pt = (x, y - 1)
         # P3
-        elif skeleton[y-1][x+1] == 0.0 and (x+1, y-1) not in points:
-            next_pt = (x+1, y-1)
+        elif skeleton[y - 1][x + 1] == 0.0 and (x + 1, y - 1) not in points:
+            next_pt = (x + 1, y - 1)
         # P4
-        elif skeleton[y][x+1] == 0.0 and (x+1, y) not in points:
-            next_pt = (x+1, y)
+        elif skeleton[y][x + 1] == 0.0 and (x + 1, y) not in points:
+            next_pt = (x + 1, y)
         # P5
-        elif skeleton[y+1][x+1] == 0.0 and (x+1, y+1) not in points:
-            next_pt = (x+1, y+1)
+        elif skeleton[y + 1][x + 1] == 0.0 and (x + 1, y + 1) not in points:
+            next_pt = (x + 1, y + 1)
         # P6
-        elif skeleton[y+1][x] == 0.0 and (x, y+1) not in points:
-            next_pt = (x, y+1)
+        elif skeleton[y + 1][x] == 0.0 and (x, y + 1) not in points:
+            next_pt = (x, y + 1)
         # P7
-        elif skeleton[y+1][x-1] == 0.0 and (x-1, y+1) not in points:
-            next_pt = (x-1, y+1)
+        elif skeleton[y + 1][x - 1] == 0.0 and (x - 1, y + 1) not in points:
+            next_pt = (x - 1, y + 1)
         # P8
-        elif skeleton[y][x-1] == 0.0 and (x-1, y) not in points:
-            next_pt = (x-1, y)
+        elif skeleton[y][x - 1] == 0.0 and (x - 1, y) not in points:
+            next_pt = (x - 1, y)
         # P9
-        elif skeleton[y-1][x-1] == 0.0 and (x-1, y-1) not in points:
-            next_pt = (x-1, y-1)
+        elif skeleton[y - 1][x - 1] == 0.0 and (x - 1, y - 1) not in points:
+            next_pt = (x - 1, y - 1)
 
         # is next point is the cross point:
 
@@ -211,7 +212,7 @@ def addMinBoundingBox(image):
     x, y, w, h = getSingleMaxBoundingBoxOfImage(image)
 
     image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-    image = cv2.rectangle(image,(x,y),(x+w,y+h),(0,255,0),2)
+    image = cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
     return image
 
@@ -242,10 +243,12 @@ def getSingleMaxBoundingBoxOfImage(image):
 
         if w > 0.95 * WIDTH and h > 0.95 * HEIGHT:
             continue
-        minx = min(x, minx); miny = min(y, miny)
-        maxx = max(x+w, maxx); maxy = max(y+h, maxy)
+        minx = min(x, minx);
+        miny = min(y, miny)
+        maxx = max(x + w, maxx);
+        maxy = max(y + h, maxy)
 
-    return minx, miny, maxx-minx, maxy-miny
+    return minx, miny, maxx - minx, maxy - miny
 
 
 def getAllMiniBoundingBoxesOfImage(image):
@@ -337,8 +340,8 @@ def shiftImageWithMaxCR(source, target):
     # new rect of src and tag images
     new_rect_x = min(src_minx, tag_minx)
     new_rect_y = min(src_miny, tag_miny)
-    new_rect_w = max(src_minx+src_minw, tag_minx+tag_minw) - new_rect_x
-    new_rect_h = max(src_miny+src_minh, tag_miny+tag_minh) - new_rect_y
+    new_rect_w = max(src_minx + src_minw, tag_minx + tag_minw) - new_rect_x
+    new_rect_h = max(src_miny + src_minh, tag_miny + tag_minh) - new_rect_y
 
     # offset 0
     offset_y0 = -tag_miny
@@ -355,8 +358,8 @@ def shiftImageWithMaxCR(source, target):
         for x in range(diff_x):
             new_tag_rect = np.ones(target.shape) * 255
             new_tag_rect[tag_miny + offset_y0 + y: tag_miny + offset_y0 + y + tag_minh,
-                    tag_minx + offset_x0 + x: tag_minx + offset_x0 + x + tag_minw] = target[tag_miny: tag_miny + tag_minh,
-                                                                 tag_minx: tag_minx + tag_minw]
+            tag_minx + offset_x0 + x: tag_minx + offset_x0 + x + tag_minw] = target[tag_miny: tag_miny + tag_minh,
+                                                                             tag_minx: tag_minx + tag_minw]
             cr = calculateCoverageRate(new_tag_rect, source)
             if cr > max_cr:
                 offset_x = offset_x0 + x
@@ -367,7 +370,7 @@ def shiftImageWithMaxCR(source, target):
     new_tag_rect = np.ones(target.shape) * 255
     new_tag_rect[tag_miny + offset_y: tag_miny + offset_y + tag_minh,
     tag_minx + offset_x: tag_minx + offset_x + tag_minw] = target[tag_miny: tag_miny + tag_minh,
-                                                                     tag_minx: tag_minx + tag_minw]
+                                                           tag_minx: tag_minx + tag_minw]
 
     return new_tag_rect
 
@@ -378,7 +381,8 @@ def getCenterOfGravity(image):
     :param image: grayscale image of character.
     :return: (x, y), the coordinate of center of gravity of image.
     """
-    src_cog_x = 0; src_cog_y = 0
+    src_cog_x = 0;
+    src_cog_y = 0
     total_pixels = 0
     for y in range(image.shape[0]):
         for x in range(image.shape[1]):
@@ -436,20 +440,20 @@ def addIntersectedFig(image):
 
     # bk add border lines, width=3, color = red
     h, w, _ = bk_img.shape
-    bk_img = cv2.line(bk_img, (2, 2), (h-4, 2), (0, 0, 255), 5)
+    bk_img = cv2.line(bk_img, (2, 2), (h - 4, 2), (0, 0, 255), 5)
     bk_img = cv2.line(bk_img, (2, 2), (2, w - 4), (0, 0, 255), 5)
     bk_img = cv2.line(bk_img, (h - 4, 2), (h - 4, w - 4), (0, 0, 255), 5)
     bk_img = cv2.line(bk_img, (2, w - 4), (h - 4, w - 4), (0, 0, 255), 5)
 
     # middle lines
-    middle_x = int(w/2)
-    middle_y = int(h/2)
-    bk_img = cv2.line(bk_img, (middle_y, 0), (middle_y, w-1), (0, 255, 0), 2)
-    bk_img = cv2.line(bk_img, (0, middle_x), (h-1, middle_x), (0, 255, 0), 2)
+    middle_x = int(w / 2)
+    middle_y = int(h / 2)
+    bk_img = cv2.line(bk_img, (middle_y, 0), (middle_y, w - 1), (0, 255, 0), 2)
+    bk_img = cv2.line(bk_img, (0, middle_x), (h - 1, middle_x), (0, 255, 0), 2)
 
     # cross lines
-    bk_img = cv2.line(bk_img, (0, 0), (h-1, w-1), (0, 255, 0), 2)
-    bk_img = cv2.line(bk_img, (h-1, 0), (0, w-1), (0, 255, 0), 2)
+    bk_img = cv2.line(bk_img, (0, 0), (h - 1, w - 1), (0, 255, 0), 2)
+    bk_img = cv2.line(bk_img, (h - 1, 0), (0, w - 1), (0, 255, 0), 2)
 
     # crop bk and image
     for y in range(image.shape[0]):
@@ -473,7 +477,7 @@ def addSquaredFig(image):
 
     # bk add border lines, width=3, color = red
     h, w, _ = bk_img.shape
-    bk_img = cv2.line(bk_img, (2, 2), (h-4, 2), (0, 0, 255), 5)
+    bk_img = cv2.line(bk_img, (2, 2), (h - 4, 2), (0, 0, 255), 5)
     bk_img = cv2.line(bk_img, (2, 2), (2, w - 4), (0, 0, 255), 5)
     bk_img = cv2.line(bk_img, (h - 4, 2), (h - 4, w - 4), (0, 0, 255), 5)
     bk_img = cv2.line(bk_img, (2, w - 4), (h - 4, w - 4), (0, 0, 255), 5)
@@ -511,7 +515,7 @@ def RightTurn(p1, p2, p3):
     :param p3: (x,y) of point P3
     :return: is "right-turn" or not.
     """
-    if (p3[1]-p1[1]) * (p2[0]-p1[0]) >= (p2[1]-p1[1])*(p3[0]-p1[0]):
+    if (p3[1] - p1[1]) * (p2[0] - p1[0]) >= (p2[1] - p1[1]) * (p3[0] - p1[0]):
         return False
     return True
 
@@ -532,7 +536,7 @@ def GrahamScan(P):
             del L_upper[-2]
     L_lower = [P[-1], P[-2]]
     # compute the lower part of the hull
-    for i in range(len(P)-3, -1, -1):
+    for i in range(len(P) - 3, -1, -1):
         L_lower.append(P[i])
         while len(L_lower) > 2 and not RightTurn(L_lower[-1], L_lower[-2], L_lower[-3]):
             del L_lower[-2]
@@ -573,7 +577,7 @@ def calculatePolygonArea(points):
     if points is None:
         return 0.0
     area = 0.0
-    i = j = len(points)-1
+    i = j = len(points) - 1
 
     for i in range(len(points)):
         area += (points[j][1] + points[i][1]) * (points[j][0] - points[i][0])
@@ -620,17 +624,17 @@ def rotateImage(image, theta):
     bx0, by0, bw, bh = getSingleMaxBoundingBoxOfImage(image)
 
     # center of retota
-    x0 = bx0 + int(bw/2)
-    y0 = by0 + int(bh/2)
+    x0 = bx0 + int(bw / 2)
+    y0 = by0 + int(bh / 2)
 
     # new image of square
     new_img = np.ones(image.shape) * 255
 
     # rotate
-    for y in range(by0, by0+bh):
-        for x in range(bx0, bx0+bw):
-            x2 = round(cos(theta) * (x-x0) - sin(theta) * (y-y0)) + x0
-            y2 = round(sin(theta) * (x-x0) + cos(theta) * (y-y0)) + y0
+    for y in range(by0, by0 + bh):
+        for x in range(bx0, bx0 + bw):
+            x2 = round(cos(theta) * (x - x0) - sin(theta) * (y - y0)) + x0
+            y2 = round(sin(theta) * (x - x0) + cos(theta) * (y - y0)) + y0
 
             new_img[y2][x2] = image[y][x]
 
@@ -651,8 +655,8 @@ def rotate_character(image, angle):
 
     # original image and four rectangle points
     rx, ry, rw, rh = getSingleMaxBoundingBoxOfImage(image)
-    cx = rx + int(rw/2)
-    cy = ry + int(rh/2)
+    cx = rx + int(rw / 2)
+    cy = ry + int(rh / 2)
 
     # invert color from white to black background
     image = 255 - image
@@ -707,7 +711,7 @@ def getConnectedComponentsOfGrayScale(graysacle, threshold_value=127, connectivi
         return components
 
     for i in range(1, num_labels):
-        mask = labels==i
+        mask = labels == i
         mask = np.uint8(mask)
         fig = getFigFromMask(graysacle, mask)
         components.append(fig)
@@ -729,7 +733,6 @@ def getFigFromMask(grayscale, mask):
     return fig
 
 
-
 def getConnectedComponents(image, connectivity=4):
     """
     Get the connected components of character from image with Labeling algorithm.
@@ -740,14 +743,14 @@ def getConnectedComponents(image, connectivity=4):
     if image is None:
         return None
     # the image is black vaild pixels and white background pixels
-    image = cv2.bitwise_not(image) # inverting the color
+    image = cv2.bitwise_not(image)  # inverting the color
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(image, connectivity)
     components = []
     if num_labels == 0:
         return None
 
     for i in range(1, num_labels):
-        mask = labels==i
+        mask = labels == i
         mask = np.uint8(mask)
         fig = cv2.bitwise_and(image, image, mask=mask)
         fig = cv2.bitwise_not(fig)
@@ -806,8 +809,8 @@ def removeBreakPointsOfContour(contour):
         return
     # find all break points
     break_points = []
-    for y in range(1, contour.shape[0]-1):
-        for x in range(1, contour.shape[1]-1):
+    for y in range(1, contour.shape[0] - 1):
+        for x in range(1, contour.shape[1] - 1):
             if contour[y][x] == 0.0:
                 num_ = getNumberOfValidPixels(contour, x, y)
                 if num_ == 1:
@@ -831,10 +834,11 @@ def removeBreakPointsOfContour(contour):
         start_point = break_points[id]
         next_point = None
         next_id = 0
-        for idx in range(id+1, len(break_points)):
+        for idx in range(id + 1, len(break_points)):
             if bp_label[idx] == 1.:
                 continue
-            dist_ = math.sqrt((start_point[0] - break_points[idx][0])**2 + (start_point[1] - break_points[idx][1])**2)
+            dist_ = math.sqrt(
+                (start_point[0] - break_points[idx][0]) ** 2 + (start_point[1] - break_points[idx][1]) ** 2)
             if dist_ < max_dist:
                 max_dist = dist_
                 next_point = (break_points[idx][0], break_points[idx][1])
@@ -846,9 +850,6 @@ def removeBreakPointsOfContour(contour):
             bp_label[next_id] = 1.
 
     return contour
-
-
-
 
 
 # def getSkeletonOfImage(image, shape=cv2.MORPH_CROSS, kernel=(3, 3)):
@@ -1005,25 +1006,27 @@ def getCrossPointsOfSkeletonLine(image):
     for (x, y) in cross_points:
         black_num = 0
         # P2
-        if image[y-1][x] == 0.0 and (x, y-1) in cross_points:
+        if image[y - 1][x] == 0.0 and (x, y - 1) in cross_points:
             black_num += 1
         # P4
-        if image[y][x+1] == 0.0 and (x+1, y) in cross_points:
+        if image[y][x + 1] == 0.0 and (x + 1, y) in cross_points:
             black_num += 1
         # P6
-        if image[y+1][x] == 0.0 and (x, y+1) in cross_points:
+        if image[y + 1][x] == 0.0 and (x, y + 1) in cross_points:
             black_num += 1
         # P8
-        if image[y][x-1] == 0.0 and (x-1, y) in cross_points:
+        if image[y][x - 1] == 0.0 and (x - 1, y) in cross_points:
             black_num += 1
 
         if black_num == 2 or black_num == 3 or black_num == 4:
             # print(black_num)
             cross_points_no_extra.append((x, y))
 
-        if (x, y) in cross_points and (x, y-1) not in cross_points and (x+1, y-1) not in cross_points and (x+1, y) not in \
-            cross_points and (x+1, y+1) not in cross_points and (x, y+1) not in cross_points and (x-1, y+1) not in \
-            cross_points and (x-1, y) not in cross_points and (x-1, y-1) not in cross_points:
+        if (x, y) in cross_points and (x, y - 1) not in cross_points and (x + 1, y - 1) not in cross_points and (
+        x + 1, y) not in \
+                cross_points and (x + 1, y + 1) not in cross_points and (x, y + 1) not in cross_points and (
+        x - 1, y + 1) not in \
+                cross_points and (x - 1, y) not in cross_points and (x - 1, y - 1) not in cross_points:
             cross_points_no_extra.append((x, y))
 
     return cross_points_no_extra
@@ -1050,35 +1053,46 @@ def removeExtraBranchesOfSkeleton(image, distance_threshod=20):
         current_pt = end
         while True:
             # p2-p9 should not be the cross points
-            if (current_pt[0], current_pt[1]-1) in cross_points or (current_pt[0]+1, current_pt[1]-1) in cross_points or\
-                (current_pt[0] + 1, current_pt[1]) in cross_points or (current_pt[0]+1, current_pt[1]+1) in cross_points or \
-                (current_pt[0], current_pt[1] + 1) in cross_points or (current_pt[0]-1, current_pt[1]+1) in cross_points or\
-                (current_pt[0]-1, current_pt[1]) in cross_points or (current_pt[0]-1, current_pt[1]-1) in cross_points:
+            if (current_pt[0], current_pt[1] - 1) in cross_points or (
+            current_pt[0] + 1, current_pt[1] - 1) in cross_points or \
+                    (current_pt[0] + 1, current_pt[1]) in cross_points or (
+            current_pt[0] + 1, current_pt[1] + 1) in cross_points or \
+                    (current_pt[0], current_pt[1] + 1) in cross_points or (
+            current_pt[0] - 1, current_pt[1] + 1) in cross_points or \
+                    (current_pt[0] - 1, current_pt[1]) in cross_points or (
+            current_pt[0] - 1, current_pt[1] - 1) in cross_points:
                 break
 
-            if image[current_pt[1]-1][current_pt[0]] == 0.0 and (current_pt[0], current_pt[1]-1) not in used_points:
+            if image[current_pt[1] - 1][current_pt[0]] == 0.0 and (current_pt[0], current_pt[1] - 1) not in used_points:
                 # P2
-                next_pt = (current_pt[0], current_pt[1]-1)
+                next_pt = (current_pt[0], current_pt[1] - 1)
 
-            elif image[current_pt[1]-1][current_pt[0]+1] == 0.0 and (current_pt[0]+1, current_pt[1]-1) not in used_points:
+            elif image[current_pt[1] - 1][current_pt[0] + 1] == 0.0 and (
+            current_pt[0] + 1, current_pt[1] - 1) not in used_points:
                 # P3
-                next_pt = (current_pt[0]+1, current_pt[1]-1)
-            elif image[current_pt[1]][current_pt[0]+1] == 0.0 and (current_pt[0]+1, current_pt[1]) not in used_points:
+                next_pt = (current_pt[0] + 1, current_pt[1] - 1)
+            elif image[current_pt[1]][current_pt[0] + 1] == 0.0 and (
+            current_pt[0] + 1, current_pt[1]) not in used_points:
                 # P4
-                next_pt = (current_pt[0]+1, current_pt[1])
-            elif image[current_pt[1]+1][current_pt[0]+1] == 0.0 and (current_pt[0]+1, current_pt[1]+1) not in used_points:
+                next_pt = (current_pt[0] + 1, current_pt[1])
+            elif image[current_pt[1] + 1][current_pt[0] + 1] == 0.0 and (
+            current_pt[0] + 1, current_pt[1] + 1) not in used_points:
                 # P5
-                next_pt = (current_pt[0]+1, current_pt[1]+1)
-            elif image[current_pt[1]+1][current_pt[0]] == 0.0 and (current_pt[0], current_pt[1]+1) not in used_points:
+                next_pt = (current_pt[0] + 1, current_pt[1] + 1)
+            elif image[current_pt[1] + 1][current_pt[0]] == 0.0 and (
+            current_pt[0], current_pt[1] + 1) not in used_points:
                 # P6
-                next_pt = (current_pt[0], current_pt[1]+1)
-            elif image[current_pt[1]+1][current_pt[0]-1] == 0.0 and (current_pt[0]-1, current_pt[1]+1) not in used_points:
+                next_pt = (current_pt[0], current_pt[1] + 1)
+            elif image[current_pt[1] + 1][current_pt[0] - 1] == 0.0 and (
+            current_pt[0] - 1, current_pt[1] + 1) not in used_points:
                 # P7
-                next_pt = (current_pt[0]-1, current_pt[1]+1)
-            elif image[current_pt[1]][current_pt[0]-1] == 0.0 and (current_pt[0]-1, current_pt[1]) not in used_points:
+                next_pt = (current_pt[0] - 1, current_pt[1] + 1)
+            elif image[current_pt[1]][current_pt[0] - 1] == 0.0 and (
+            current_pt[0] - 1, current_pt[1]) not in used_points:
                 # P8
-                next_pt = (current_pt[0]-1, current_pt[1])
-            elif image[current_pt[1] - 1][current_pt[0] - 1] == 0.0 and (current_pt[0] - 1, current_pt[1] - 1) not in used_points:
+                next_pt = (current_pt[0] - 1, current_pt[1])
+            elif image[current_pt[1] - 1][current_pt[0] - 1] == 0.0 and (
+            current_pt[0] - 1, current_pt[1] - 1) not in used_points:
                 # P9
                 next_pt = (current_pt[0] - 1, current_pt[1] - 1)
 
@@ -1094,7 +1108,6 @@ def removeExtraBranchesOfSkeleton(image, distance_threshod=20):
                 image[pt[1]][pt[0]] = 255.
 
     return image
-
 
 
 def removeBranchOfSkeletonLine(image, end_points, cross_points, DIST_THRESHOLD=20):
@@ -1114,7 +1127,7 @@ def removeBranchOfSkeletonLine(image, end_points, cross_points, DIST_THRESHOLD=2
     # remove branches of skeleton line
     for (c_x, c_y) in cross_points:
         for (e_x, e_y) in end_points:
-            dist = math.sqrt((c_x-e_x) * (c_x-e_x) + (c_y-e_y) * (c_y-e_y))
+            dist = math.sqrt((c_x - e_x) * (c_x - e_x) + (c_y - e_y) * (c_y - e_y))
             if dist < DIST_THRESHOLD:
                 # print("%d %d %d %d " % (e_x, e_y, c_x, c_y))
                 branch_points = getPointsOfExtraBranchOfSkeletonLine(image, e_x, e_y, c_x, c_y)
@@ -1141,47 +1154,47 @@ def getPointsOfExtraBranchOfSkeletonLine(image, start_x, start_y, end_x, end_y):
     start_point = (start_x, start_y)
     next_point = start_point
 
-    while(True):
+    while (True):
 
         # P2
-        if image[start_point[1]-1][start_point[0]] == 0.0 and (start_point[0], start_point[1]-1) not in \
+        if image[start_point[1] - 1][start_point[0]] == 0.0 and (start_point[0], start_point[1] - 1) not in \
                 extra_branch_points:
-            next_point = (start_point[0], start_point[1]-1)
+            next_point = (start_point[0], start_point[1] - 1)
             # print(next_point)
         # P3
-        if image[start_point[1]-1][start_point[0]+1] == 0.0 and (start_point[0]+1, start_point[1]-1) not in \
+        if image[start_point[1] - 1][start_point[0] + 1] == 0.0 and (start_point[0] + 1, start_point[1] - 1) not in \
                 extra_branch_points:
-            next_point = (start_point[0]+1, start_point[1]-1)
+            next_point = (start_point[0] + 1, start_point[1] - 1)
             # print(next_point)
         # P4
-        if image[start_point[1]][start_point[0]+1] == 0.0 and (start_point[0]+1, start_point[1]) not in \
+        if image[start_point[1]][start_point[0] + 1] == 0.0 and (start_point[0] + 1, start_point[1]) not in \
                 extra_branch_points:
-            next_point = (start_point[0]+1, start_point[1])
+            next_point = (start_point[0] + 1, start_point[1])
             # print(next_point)
         # P5
-        if image[start_point[1]+1][start_point[0]+1] == 0.0 and (start_point[0]+1, start_point[1]+1) not in \
+        if image[start_point[1] + 1][start_point[0] + 1] == 0.0 and (start_point[0] + 1, start_point[1] + 1) not in \
                 extra_branch_points:
-            next_point = (start_point[0]+1, start_point[1]+1)
+            next_point = (start_point[0] + 1, start_point[1] + 1)
             # print(next_point)
         # P6
-        if image[start_point[1]+1][start_point[0]] == 0.0 and (start_point[0], start_point[1]+1) not in \
+        if image[start_point[1] + 1][start_point[0]] == 0.0 and (start_point[0], start_point[1] + 1) not in \
                 extra_branch_points:
-            next_point = (start_point[0], start_point[1]+1)
+            next_point = (start_point[0], start_point[1] + 1)
             # print(next_point)
         # P7
-        if image[start_point[1]+1][start_point[0]-1] == 0.0 and (start_point[0]-1, start_point[1]+1) not in \
+        if image[start_point[1] + 1][start_point[0] - 1] == 0.0 and (start_point[0] - 1, start_point[1] + 1) not in \
                 extra_branch_points:
-            next_point = (start_point[0]-1, start_point[1]+1)
+            next_point = (start_point[0] - 1, start_point[1] + 1)
             # print(next_point)
         # P8
-        if image[start_point[1]][start_point[0]-1] == 0.0 and (start_point[0]-1, start_point[1]) not in \
+        if image[start_point[1]][start_point[0] - 1] == 0.0 and (start_point[0] - 1, start_point[1]) not in \
                 extra_branch_points:
-            next_point = (start_point[0]-1, start_point[1])
+            next_point = (start_point[0] - 1, start_point[1])
             # print(next_point)
         # P9
-        if image[start_point[1]-1][start_point[0]-1] == 0.0 and (start_point[0]-1, start_point[1]-1) not in \
+        if image[start_point[1] - 1][start_point[0] - 1] == 0.0 and (start_point[0] - 1, start_point[1] - 1) not in \
                 extra_branch_points:
-            next_point = (start_point[0]-1, start_point[1]-1)
+            next_point = (start_point[0] - 1, start_point[1] - 1)
             # print(next_point)
 
         extra_branch_points.append(start_point)
@@ -1240,7 +1253,8 @@ def sortPointsOnContourOfImage(image, isClockwise=True):
     next_point = second_point
     current_point = second_point
     while True:
-        x = current_point[0]; y = current_point[1]
+        x = current_point[0];
+        y = current_point[1]
 
         # 2,4,6,8 position firstly and then 3,5,7,9 position
         # point in 2 position
@@ -1330,7 +1344,7 @@ def fitCubic(points, leftTangent, rightTangent, error):
     # Use heuristic if region only has two points in it
     if len(points) == 2:
         dist = np.linalg.norm(points[0] - points[1]) / 3.
-        bezCurve = [points[0], points[0]+leftTangent*dist, points[1]+rightTangent*dist, points[1]]
+        bezCurve = [points[0], points[0] + leftTangent * dist, points[1] + rightTangent * dist, points[1]]
         return [bezCurve]
 
     # Parameterize points, and attempt to fit curve
@@ -1342,7 +1356,7 @@ def fitCubic(points, leftTangent, rightTangent, error):
         return [bezCurve]
 
     # If error not too large, try some reparameterization and iteration
-    if maxError < error**2:
+    if maxError < error ** 2:
         for i in range(20):
             uPrime = reparameterize(bezCurve, points, u)
             bezCurve = generateBezier(points, uPrime, leftTangent, rightTangent)
@@ -1353,8 +1367,8 @@ def fitCubic(points, leftTangent, rightTangent, error):
 
     # Fitting failed -- split at max error point and fit recursively
     beziers = []
-    centerTangent = normalize(points[splitPoint-1] - points[splitPoint+1])
-    beziers += fitCubic(points[:splitPoint+1], leftTangent, centerTangent, error)
+    centerTangent = normalize(points[splitPoint - 1] - points[splitPoint + 1])
+    beziers += fitCubic(points[:splitPoint + 1], leftTangent, centerTangent, error)
     beziers += fitCubic(points[splitPoint:], -centerTangent, rightTangent, error)
 
     return beziers
@@ -1366,8 +1380,8 @@ def generateBezier(points, parameters, leftTangent, rightTangent):
     # compute the A's
     A = np.zeros((len(parameters), 2, 2))
     for i, u in enumerate(parameters):
-        A[i][0] = leftTangent * 3 * (1-u)**2 *u
-        A[i][1] = rightTangent * 3 * (1-u) * u**2
+        A[i][0] = leftTangent * 3 * (1 - u) ** 2 * u
+        A[i][1] = rightTangent * 3 * (1 - u) * u ** 2
 
     # Create the C and X matrics
     C = np.zeros((2, 2))
@@ -1436,26 +1450,28 @@ def newtonRaphsonRootFind(bez, point, u):
     """
     d = q(bez, u) - point
     numerator = (d * qprime(bez, u)).sum()
-    denominator = (qprime(bez, u)**2 + d * qprimeprime(bez, u)).sum()
+    denominator = (qprime(bez, u) ** 2 + d * qprimeprime(bez, u)).sum()
     if denominator == 0.0:
         return u
     else:
         return u - numerator / denominator
 
+
 def chordLengthParameterize(points):
     u = [0.0]
     for i in range(1, len(points)):
-        u.append(u[i-1] + np.linalg.norm(points[i] - points[i-1]))
+        u.append(u[i - 1] + np.linalg.norm(points[i] - points[i - 1]))
 
     for i, _ in enumerate(u):
         u[i] = u[i] / u[-1]
     return u
 
+
 def computeMaxError(points, bez, parameters):
     maxDist = 0.0
     splitPoint = len(points) / 2
     for i, (point, u) in enumerate(zip(points, parameters)):
-        dist = np.linalg.norm(q(bez, u)-point)**2
+        dist = np.linalg.norm(q(bez, u) - point) ** 2
         if dist > maxDist:
             maxDist = dist
             splitPoint = i
@@ -1469,17 +1485,20 @@ def normalize(v):
 
 # evaluates cubic bezier at t, return point
 def q(ctrlPoly, t):
-    return (1.0-t)**3 * ctrlPoly[0] + 3*(1.0-t)**2 * t * ctrlPoly[1] + 3*(1.0-t)* t**2 * ctrlPoly[2] + t**3 * ctrlPoly[3]
+    return (1.0 - t) ** 3 * ctrlPoly[0] + 3 * (1.0 - t) ** 2 * t * ctrlPoly[1] + 3 * (1.0 - t) * t ** 2 * ctrlPoly[
+        2] + t ** 3 * ctrlPoly[3]
 
 
 # evaluates cubic bezier first derivative at t, return point
 def qprime(ctrlPoly, t):
-    return 3*(1.0-t)**2 * (ctrlPoly[1]-ctrlPoly[0]) + 6*(1.0-t) * t * (ctrlPoly[2]-ctrlPoly[1]) + 3*t**2 * (ctrlPoly[3]-ctrlPoly[2])
+    return 3 * (1.0 - t) ** 2 * (ctrlPoly[1] - ctrlPoly[0]) + 6 * (1.0 - t) * t * (
+                ctrlPoly[2] - ctrlPoly[1]) + 3 * t ** 2 * (ctrlPoly[3] - ctrlPoly[2])
 
 
 # evaluates cubic bezier second derivative at t, return point
 def qprimeprime(ctrlPoly, t):
-    return 6*(1.0-t) * (ctrlPoly[2]-2*ctrlPoly[1]+ctrlPoly[0]) + 6*(t) * (ctrlPoly[3]-2*ctrlPoly[2]+ctrlPoly[1])
+    return 6 * (1.0 - t) * (ctrlPoly[2] - 2 * ctrlPoly[1] + ctrlPoly[0]) + 6 * (t) * (
+                ctrlPoly[3] - 2 * ctrlPoly[2] + ctrlPoly[1])
 
 
 def getCenterOfRectangles(rect):
@@ -1490,8 +1509,8 @@ def getCenterOfRectangles(rect):
     """
     if rect is None:
         return None
-    cx = rect[0] + int(rect[2]/2)
-    cy = rect[1] + int(rect[3]/2)
+    cx = rect[0] + int(rect[2] / 2)
+    cy = rect[1] + int(rect[3] / 2)
 
     return (cx, cy)
 
@@ -1526,7 +1545,7 @@ def combineRectangles(rectangles, rect_list):
         new_rect_x1 = max(new_rect_x1, rect_x1)
         new_rect_y1 = max(new_rect_y1, rect_y1)
 
-    return new_rect_x0, new_rect_y0, new_rect_x1-new_rect_x0, new_rect_y1-new_rect_y0
+    return new_rect_x0, new_rect_y0, new_rect_x1 - new_rect_x0, new_rect_y1 - new_rect_y0
 
 
 def rgb2qimage(rgb):
@@ -1673,10 +1692,11 @@ def min_distance_point2pointlist(point, points):
     if point is None or points is None:
         return min_dist
     for pt in points:
-        dist = math.sqrt((point[0]-pt[0])**2+(point[1]-pt[1])**2)
+        dist = math.sqrt((point[0] - pt[0]) ** 2 + (point[1] - pt[1]) ** 2)
         if dist < min_dist:
             min_dist = dist
     return min_dist
+
 
 # segment contour to sub-contours based on the corner points
 def segmentContourBasedOnCornerPoints(contour_sorted, corner_points):
@@ -1697,7 +1717,8 @@ def segmentContourBasedOnCornerPoints(contour_sorted, corner_points):
     sub_contours = []
     for i in range(len(sub_contour_index)):
         if i == len(sub_contour_index) - 1:
-            sub_contour = contour_sorted[sub_contour_index[i]:len(contour_sorted)] + contour_sorted[0: sub_contour_index[0] + 1]
+            sub_contour = contour_sorted[sub_contour_index[i]:len(contour_sorted)] + contour_sorted[
+                                                                                     0: sub_contour_index[0] + 1]
         else:
             sub_contour = contour_sorted[sub_contour_index[i]:sub_contour_index[i + 1] + 1]
         sub_contours.append(sub_contour)
@@ -1741,18 +1762,18 @@ def merge_corner_lines_to_point(corner_line_points, contour_sorted):
     i = 0
     start_id = end_id = i
     while True:
-        if i == len(contour_sorted)-1:
+        if i == len(contour_sorted) - 1:
             break
         if contour_sorted[i] in corner_line_points:
             start_id = i
             end_id = i
-            for j in range(i+1, len(contour_sorted)):
+            for j in range(i + 1, len(contour_sorted)):
                 if contour_sorted[j] in corner_line_points:
                     continue
                 else:
-                    end_id = j-1
+                    end_id = j - 1
                     break
-            midd_id = start_id + int((end_id-start_id)/2.)
+            midd_id = start_id + int((end_id - start_id) / 2.)
             corner_points.append(contour_sorted[midd_id])
             i = end_id
 
@@ -1779,39 +1800,39 @@ def getLinePoints(grayscale, start_pt, end_pt):
     while True:
         if next_pt == end_pt:
             break
-        x = next_pt[0]; y = next_pt[1]
+        x = next_pt[0];
+        y = next_pt[1]
 
-        if grayscale[y-1][x] == 0 and (x, y-1) not in points:
+        if grayscale[y - 1][x] == 0 and (x, y - 1) not in points:
             # p2
-            next_pt = (x, y-1)
-        elif grayscale[y-1][x+1] == 0 and (x+1, y-1) not in points:
+            next_pt = (x, y - 1)
+        elif grayscale[y - 1][x + 1] == 0 and (x + 1, y - 1) not in points:
             # P3
-            next_pt = (x+1, y-1)
-        elif grayscale[y][x+1] == 0 and (x+1, y) not in points:
+            next_pt = (x + 1, y - 1)
+        elif grayscale[y][x + 1] == 0 and (x + 1, y) not in points:
             # P4
-            next_pt = (x+1, y)
-        elif grayscale[y+1][x+1] == 0 and (x+1, y+1) not in points:
+            next_pt = (x + 1, y)
+        elif grayscale[y + 1][x + 1] == 0 and (x + 1, y + 1) not in points:
             # P5
-            next_pt = (x+1, y+1)
-        elif grayscale[y+1][x] == 0 and (x, y+1) not in points:
+            next_pt = (x + 1, y + 1)
+        elif grayscale[y + 1][x] == 0 and (x, y + 1) not in points:
             # P6
-            next_pt = (x, y+1)
-        elif grayscale[y+1][x-1] == 0 and (x-1, y+1) not in points:
+            next_pt = (x, y + 1)
+        elif grayscale[y + 1][x - 1] == 0 and (x - 1, y + 1) not in points:
             # P7
-            next_pt = (x-1, y+1)
-        elif grayscale[y][x-1] == 0 and (x-1, y) not in points:
+            next_pt = (x - 1, y + 1)
+        elif grayscale[y][x - 1] == 0 and (x - 1, y) not in points:
             # P8
-            next_pt = (x-1, y)
-        elif grayscale[y-1][x-1] == 0 and (x-1, y-1) not in points:
+            next_pt = (x - 1, y)
+        elif grayscale[y - 1][x - 1] == 0 and (x - 1, y - 1) not in points:
             # P9
-            next_pt = (x-1, y-1)
+            next_pt = (x - 1, y - 1)
         print(next_pt)
         points.append(next_pt)
     points.append(end_pt)
 
     print("line points num: %d" % len(points))
     return points
-
 
 
 def getBreakPointsFromContour(contour):
@@ -1840,18 +1861,18 @@ def merge_corner_lines_to_point(corner_line_points, contour_sorted):
     i = 0
     start_id = end_id = i
     while True:
-        if i == len(contour_sorted)-1:
+        if i == len(contour_sorted) - 1:
             break
         if contour_sorted[i] in corner_line_points:
             start_id = i
             end_id = i
-            for j in range(i+1, len(contour_sorted)):
+            for j in range(i + 1, len(contour_sorted)):
                 if contour_sorted[j] in corner_line_points:
                     continue
                 else:
-                    end_id = j-1
+                    end_id = j - 1
                     break
-            midd_id = start_id + int((end_id-start_id)/2.)
+            midd_id = start_id + int((end_id - start_id) / 2.)
             corner_points.append(contour_sorted[midd_id])
             i = end_id
 
@@ -1860,9 +1881,9 @@ def merge_corner_lines_to_point(corner_line_points, contour_sorted):
     return corner_points
 
 
-def getCropLines(corner_points_cluster):
+def getCropLines(corner_points_cluster, contours, distance=30):
     crop_lines = []
-    if corner_points_cluster is None:
+    if corner_points_cluster is None or contours is None:
         return crop_lines
     for i in range(len(corner_points_cluster)):
         corner_clt = corner_points_cluster[i]
@@ -1871,12 +1892,45 @@ def getCropLines(corner_points_cluster):
             crop_lines.append((corner_clt))
         elif len(corner_clt) == 1:
             print("One corner point")
+            # get this point
+            pt = corner_clt[0]
+
+            # find contour contains this point from contours list
+            cont_pt = None
+            for cont in contours:
+                if cont[pt[1]][pt[0]] == 0.0:
+                    cont_pt = cont.copy()
+                    break
+
+            if cont_pt is None:
+                print("not find contour contains this point")
+
+            # sorted the contours to find next point near by this point
+            contour_sorted = sortPointsOnContourOfImage(cont_pt)
+
+            pt_index = contour_sorted.index(pt)
+            next_pt = None
+            if pt_index + 4 > len(contour_sorted) - 1:
+                next_pt = contour_sorted[pt_index + 4 - len(contour_sorted)]
+            else:
+                next_pt = contour_sorted[pt_index + 4]
+
+            # pt and next_pt to get the  stright line to crop contour
+            target_pt = None
+            for cpt in contour_sorted:
+                if cpt[0] - pt[0] != 0 and pt[0] - next_pt[0] != 0:
+                    if abs((cpt[1] - pt[1]) / (cpt[0] - pt[0]) - (pt[1] - next_pt[1]) / ( pt[0] - next_pt[0])) < 0.001\
+                            and math.sqrt((cpt[0] - pt[0]) ** 2 + (cpt[1] - pt[1]) ** 2) < distance:
+                        target_pt = cpt
+                        break
+            crop_lines.append((pt, target_pt))
+
         elif len(corner_clt) == 4:
             print(corner_clt)
             # based on the y list to detect rectangle or diamond
             y_list = [corner_clt[0][1], corner_clt[1][1], corner_clt[2][1], corner_clt[3][1]]
             y_list = sorted(y_list)
-            if y_list[1]-y_list[0] <= 10:
+            if y_list[1] - y_list[0] <= 10:
                 print("rectangle")
                 """
                     P1     P2
@@ -1896,12 +1950,16 @@ def getCropLines(corner_points_cluster):
                     # P1 / P2
                 if P1[0] >= P2[0]:
                     # change order of P1 and P2
-                    temp_pt = P2; P2 = P1; P1 = temp_pt
+                    temp_pt = P2;
+                    P2 = P1;
+                    P1 = temp_pt
 
                     # P3 / P4
                 if P3[0] >= P4[0]:
                     # change order of P3 / P4
-                    temp_pt = P4; P4 = P3; P3 = temp_pt
+                    temp_pt = P4;
+                    P4 = P3;
+                    P3 = temp_pt
 
                 crop_lines.append((P1, P2))
                 crop_lines.append((P3, P4))
@@ -1918,17 +1976,23 @@ def getCropLines(corner_points_cluster):
                 used_point_index = []
                 for i in range(len(corner_clt)):
                     if corner_clt[i][1] == y_list[0] and 0 not in used_point_index:
-                        P1 = corner_clt[i]; used_point_index.append(0)
+                        P1 = corner_clt[i];
+                        used_point_index.append(0)
                     elif corner_clt[i][1] == y_list[1] and 1 not in used_point_index:
-                        P2 = corner_clt[i]; used_point_index.append(1)
+                        P2 = corner_clt[i];
+                        used_point_index.append(1)
                     elif corner_clt[i][1] == y_list[2] and 2 not in used_point_index:
-                        P4= corner_clt[i];  used_point_index.append(2)
+                        P4 = corner_clt[i];
+                        used_point_index.append(2)
                     elif corner_clt[i][1] == y_list[3] and 3 not in used_point_index:
-                        P3 = corner_clt[i]; used_point_index.append(3)
+                        P3 = corner_clt[i];
+                        used_point_index.append(3)
 
                 if P4[0] >= P2[0]:
                     # change order of P2 / P4
-                    curr_pt = P2; P2 = P4; P4 = curr_pt
+                    curr_pt = P2;
+                    P2 = P4;
+                    P4 = curr_pt
 
                 crop_lines.append((P1, P2))
                 crop_lines.append((P2, P3))
@@ -1936,6 +2000,7 @@ def getCropLines(corner_points_cluster):
                 crop_lines.append((P4, P1))
 
     return crop_lines
+
 
 def getCropLinesPoints(image, crop_lines):
     """
@@ -1961,7 +2026,9 @@ def getCropLinesPoints(image, crop_lines):
         del bk_img
     return crop_lines_points
 
-def getCornerPointsOfImage(image, contour, cross_points, end_points, threshold_distance=40, blockSize=3, ksize=3, k=0.03):
+
+def getCornerPointsOfImage(image, contour, cross_points, end_points, threshold_distance=40, blockSize=3, ksize=3,
+                           k=0.03):
     """
     Get the corner point of image.
     :param image:
@@ -2115,7 +2182,7 @@ def getValidCornersPoints(corners_all_points, cross_points, end_points, distance
         dist_cross = min_distance_point2pointlist(pt, cross_points)
         dist_end = min_distance_point2pointlist(pt, end_points)
         if dist_cross < distance_threshold and dist_end > distance_threshold / 4.:
-        # if dist_cross < distance_threshold:
+            # if dist_cross < distance_threshold:
             corners_points.append(pt)
 
     return corners_points
@@ -2135,7 +2202,7 @@ def getDistanceBetweenPointAndComponent(pt, component):
     for y in range(component.shape[0]):
         for x in range(component.shape[1]):
             if component[y][x] == 0.0:
-                dist = math.sqrt((pt[0]-x)**2 + (pt[1]-y)**2)
+                dist = math.sqrt((pt[0] - x) ** 2 + (pt[1] - y) ** 2)
                 if dist < min_distance:
                     min_distance = dist
 
@@ -2206,3 +2273,23 @@ def isValidComponent(component, grayscale):
         return True
     else:
         return False
+
+
+def getDistancePointToRegion(point, region):
+    """
+    Get minimal distance fomt point to region.
+    :param point:
+    :param region:
+    :return:
+    """
+    if point is None or region is None:
+        return -1
+    min_dist = 100000000
+    for y in range(region.shape[0]):
+        for x in range(region.shape[1]):
+            if region[y][x] == 0.0:
+                dist = math.sqrt((point[0] - x) ** 2 + (point[1] - y) ** 2)
+                if dist < min_dist:
+                    min_dist = dist
+
+    return min_dist

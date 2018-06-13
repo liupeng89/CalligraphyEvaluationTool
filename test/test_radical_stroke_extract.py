@@ -54,7 +54,7 @@ corner_points_cluster = getClusterOfCornerPoints(corner_points, cross_points)
 print("corner cluster num:%d" % len(corner_points_cluster))
 
 # detect corner points type: two point, four point (rectangle or diamond)
-crop_lines = getCropLines(corner_points_cluster)
+crop_lines = getCropLines(corner_points_cluster, None)
 for line in crop_lines:
     cv2.line(contour_rgb, line[0], line[1], (0, 255, 0), 1)
 

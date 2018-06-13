@@ -2,15 +2,11 @@ import cv2
 import numpy as np
 import math
 
-from utils.Functions import getConnectedComponents, getContourOfImage, getSkeletonOfImage, removeBreakPointsOfContour, \
-                            removeBranchOfSkeletonLine, removeExtraBranchesOfSkeleton, getEndPointsOfSkeletonLine, \
-                            getCrossPointsOfSkeletonLine, sortPointsOnContourOfImage, min_distance_point2pointlist, \
-                            getNumberOfValidPixels, segmentContourBasedOnCornerPoints, createBlankGrayscaleImage, \
-                            getLinePoints, getBreakPointsFromContour, merge_corner_lines_to_point, getCropLines, \
-                            getCornerPointsOfImage, getClusterOfCornerPoints, getCropLinesPoints, \
-                            getConnectedComponentsOfGrayScale, getAllMiniBoundingBoxesOfImage, getCornersPoints, \
-                            getContourImage, getValidCornersPoints, getDistanceBetweenPointAndComponent, \
-                            isIndependentCropLines, mergeBkAndComponent, isValidComponent, removeShortBranchesOfSkeleton
+from utils.Functions import getConnectedComponents, getSkeletonOfImage, getEndPointsOfSkeletonLine, \
+                            getCrossPointsOfSkeletonLine, createBlankGrayscaleImage, getCropLines, \
+                            getClusterOfCornerPoints, getAllMiniBoundingBoxesOfImage, getContourImage, \
+                            getValidCornersPoints, getDistanceBetweenPointAndComponent, isValidComponent, \
+                            removeShortBranchesOfSkeleton
 
 
 def autoStrokeExtractFromComponent(component):
@@ -259,29 +255,3 @@ def autoStrokeExtractFromCharacter(rgb):
         strokes += sub_strokes
 
     return strokes
-
-
-def main():
-
-    # 1. Load calligraphy character image
-    path = "test_images/0860善.jpg"
-    img = cv2.imread(path)
-    print(img.shape)
-
-    strokes = autoStrokeExtractFromCharacter(img)
-
-    for i in range(len(strokes)):
-        cv2.imshow("stroke_%d" % i, strokes[i])
-
-    print("stroke num: %d" % len(strokes))
-
-
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
-
-
-
-if __name__ == '__main__':
-    main()

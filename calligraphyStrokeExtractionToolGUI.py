@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import *
 
 from calligraphyStrokeExtractionTool.strokeExtractingMainwindow import Ui_MainWindow
 from utils.Functions import splitConnectedComponents
+from utils.stroke_extraction_algorithm import autoStrokeExtractFromComponent
 
 
 class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
@@ -62,6 +63,7 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
         self.add_stroke_btn.clicked.connect(self.addStrokeBtn)
         self.delete_stroke_btn.clicked.connect(self.deleteStrokeBtn)
         self.saveStroke_btn.clicked.connect(self.strokesSaveBtn)
+        self.auto_extract_btn.clicked.connect(self.autoStrokesExtract)
 
     def openBtn(self):
         """
@@ -168,6 +170,26 @@ class StrokeExtractToolMainWindow(QMainWindow, Ui_MainWindow):
 
         self.statusbar.showMessage("Radical listview item " + str(qModelIndex.row()) + " selected!")
         del img_, qimg
+
+    def autoStrokesExtract(self):
+        """
+        Automatically strokes extraction.
+        :return:
+        """
+        print("auto stroke extract button clicked!")
+        component = self.radical_gray.copy()
+
+        strokes = autoStrokeExtractFromComponent(component)
+
+        print("strokes num: %d" % len(strokes))
+
+        self.strokes += strokes
+
+        for i in range(len(strokes)):
+            stroke_name = "stroke_" + str(i)
+            self.strokes_name.append(stroke_name)
+
+        self.stroke_slm.setStringList(self.strokes_name)
 
     def addStrokeBtn(self):
         """
