@@ -365,7 +365,6 @@ def shiftImageWithMaxCR(source, target):
                 offset_x = offset_x0 + x
                 offset_y = offset_y0 + y
                 max_cr = cr
-                print(max_cr)
 
     new_tag_rect = np.ones(target.shape) * 255
     new_tag_rect[tag_miny + offset_y: tag_miny + offset_y + tag_minh,
@@ -603,7 +602,7 @@ def calculateConvexHullArea(L):
     :param L: the end points of convex hull.
     :return: the area of convex hull region.
     """
-    if L == None:
+    if L is None:
         return 0.0
     lines = np.hstack([L, np.roll(L, -1, axis=0)])
     area = 0.5 * abs(sum(x1 * y2 - x2 * y1 for x1, y1, x2, y2 in lines))
@@ -2293,3 +2292,96 @@ def getDistancePointToRegion(point, region):
                     min_dist = dist
 
     return min_dist
+
+
+def separateImageWithJiuGongGrid(image):
+    """
+    Using jiugong grid to separate image into 9 grid image
+    :param image:
+    :return:
+    """
+    if image is None:
+        return
+
+    # interval distance of width and height
+
+    interval_dist_width = int(image.shape[1] / 3.)
+    interval_dist_height = int(image.shape[0] / 3.)
+
+    grids = []
+    grid_ = image[0: interval_dist_width, 0: interval_dist_height]
+    grids.append(grid_)
+
+    grid_ = image[0: interval_dist_width, interval_dist_height: 2 * interval_dist_height]
+    grids.append(grid_)
+
+    grid_ = image[0: interval_dist_width, 2 * interval_dist_height: 3 * interval_dist_height]
+    grids.append(grid_)
+
+    grid_ = image[interval_dist_width: 2 * interval_dist_width, 0: interval_dist_height]
+    grids.append(grid_)
+
+    grid_ = image[interval_dist_width: 2 * interval_dist_width, interval_dist_height: 2 * interval_dist_height]
+    grids.append(grid_)
+
+    grid_ = image[interval_dist_width: 2 * interval_dist_width, 2 * interval_dist_height: 3 * interval_dist_height]
+    grids.append(grid_)
+
+    grid_ = image[2 * interval_dist_width: 3 * interval_dist_width, 0: interval_dist_height]
+    grids.append(grid_)
+
+    grid_ = image[2 * interval_dist_width: 3 * interval_dist_width, interval_dist_height: 2 * interval_dist_height]
+    grids.append(grid_)
+
+    grid_ = image[2 * interval_dist_width: 3 * interval_dist_width, 2 * interval_dist_height: 3 * interval_dist_height]
+    grids.append(grid_)
+
+    return grids
+
+
+def separateImageWithElesticMesh(image, mesh_shape=4):
+    """
+    Separate image into mesh_shape x mesh_shape litte grids
+    :param image:
+    :param mesh_shape:
+    :return:
+    """
+    if image is None:
+        return
+
+    # interval distance width
+    interval_dist_width = int(image.shape[1] / mesh_shape)
+    interval_dist_height = int(image.shape[0] / mesh_shape)
+
+    grids = []
+
+    for i in range(mesh_shape):
+        for j in range(mesh_shape):
+            if (i+1)*interval_dist_width > image.shape[1]-1 or (j+1)*interval_dist_height > image.shape[0]-1:
+                continue
+            grid = image[i*interval_dist_width:(i+1)*interval_dist_width, j*interval_dist_height:(j+1)*interval_dist_height]
+            grids.append(grid)
+
+    return grids
+
+
+def getAngleOfStroke(stroke):
+    """
+    Get angle of stroke of heng and shu.
+    :param stroke:
+    :return:
+    """
+    if stroke is None:
+        return
+
+    _, contours, he = cv2.findContours(stroke, 1., 2)
+    cnt = contours[0]
+
+    rows, cols = stroke.shape
+    [vx, vy, x, y] = cv2.fitLine(cnt, cv2.DIST_L2, 0, 0.01, 0.01)
+
+    lefty = int((-x * vy / vx) + y)
+    righty = int(((cols - x) * vy / vx) + y)
+
+
+

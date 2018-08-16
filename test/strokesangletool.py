@@ -4,8 +4,8 @@ from utils.Functions import addIntersectedFig
 
 
 def main():
-    src_path = "../strokes/src_strokes2.png"
-    tag_path = "../strokes/tag_strokes2.png"
+    src_path = "test_images/ben_stroke_1.png"
+    tag_path = "test_images/ben_stroke_1.png"
 
     src_img = cv2.imread(src_path, 0)
     tag_img = cv2.imread(tag_path, 0)
@@ -18,6 +18,8 @@ def main():
 
     _, src_contours, src_he = cv2.findContours(src_img, 1, 2)
     _, tag_contours, tag_he = cv2.findContours(tag_img, 1, 2)
+
+    print(src_contours)
 
     src_cnt = src_contours[0]
     tag_cnt = tag_contours[0]
