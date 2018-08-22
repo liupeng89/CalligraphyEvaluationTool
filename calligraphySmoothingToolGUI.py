@@ -217,12 +217,15 @@ class SmoothManuallyGUI(QMainWindow, Ui_MainWindow):
         """
         print("Auto-smooth button clicked")
 
+        # RDP eplison
+        rdp_eplison = float(self.epsilon_ledit_2.text())
         # max Error
-        max_error = int(self.maxerror_ledit.text())
+        max_error = float(self.maxerror_ledit.text())
 
         img_gray = self.image_gray.copy()
 
-        img_smoothed = autoSmoothContoursOfCharacter(img_gray, bitmap_threshold=127, dist_threshold=30, max_error=max_error)
+        img_smoothed = autoSmoothContoursOfCharacter(img_gray, bitmap_threshold=127, eplison=rdp_eplison, \
+                                                     max_error=max_error)
         qimg = QImage(img_smoothed.data, img_smoothed.shape[1], img_smoothed.shape[0], img_smoothed.shape[1], \
                       QImage.Format_Indexed8)
 

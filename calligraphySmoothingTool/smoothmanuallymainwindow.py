@@ -2,12 +2,11 @@
 
 # Form implementation generated from reading ui file 'smoothmanuallymainwindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.10.1
+# Created by: PyQt5 UI code generator 5.9.2
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -16,7 +15,7 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(20, 10, 181, 321))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(20, 10, 200, 321))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -30,6 +29,17 @@ class Ui_MainWindow(object):
         self.contour_btn = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.contour_btn.setObjectName("contour_btn")
         self.verticalLayout.addWidget(self.contour_btn)
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.label_2 = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.label_2.setObjectName("label_2")
+        self.horizontalLayout_2.addWidget(self.label_2)
+        self.epsilon_ledit_2 = QtWidgets.QLineEdit(self.verticalLayoutWidget)
+        self.epsilon_ledit_2.setObjectName("epsilon_ledit_2")
+        self.horizontalLayout_2.addWidget(self.epsilon_ledit_2)
+        self.verticalLayout.addLayout(self.horizontalLayout_2)
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.label = QtWidgets.QLabel(self.verticalLayoutWidget)
@@ -38,7 +48,8 @@ class Ui_MainWindow(object):
         self.maxerror_ledit = QtWidgets.QLineEdit(self.verticalLayoutWidget)
         self.maxerror_ledit.setObjectName("maxerror_ledit")
         self.horizontalLayout.addWidget(self.maxerror_ledit)
-        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.verticalLayout_2.addLayout(self.horizontalLayout)
+        self.verticalLayout.addLayout(self.verticalLayout_2)
         self.smooth_btn = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.smooth_btn.setObjectName("smooth_btn")
         self.verticalLayout.addWidget(self.smooth_btn)
@@ -80,6 +91,8 @@ class Ui_MainWindow(object):
         self.open_btn.setText(_translate("MainWindow", "Open"))
         self.clear_btn.setText(_translate("MainWindow", "Clear"))
         self.contour_btn.setText(_translate("MainWindow", "Contour"))
+        self.label_2.setText(_translate("MainWindow", "RDP epsilon："))
+        self.epsilon_ledit_2.setPlaceholderText(_translate("MainWindow", "0"))
         self.label.setText(_translate("MainWindow", "Max Error:"))
         self.maxerror_ledit.setPlaceholderText(_translate("MainWindow", "0"))
         self.smooth_btn.setText(_translate("MainWindow", "Smooth"))
