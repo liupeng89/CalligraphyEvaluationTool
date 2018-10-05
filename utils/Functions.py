@@ -96,6 +96,7 @@ def getPointsOnSkeletonSegmentation(skeleton, start, end, cross_points):
         points.append(current_pt)
         current_pt = next_pt
 
+    points.append(end)
     return points
 
 
@@ -325,6 +326,56 @@ def coverTwoImages(source, target):
     return coverage_img
 
 
+def shiftImageWithMaxCoverageArea(source, target):
+    """
+        Shift the target image based on the maximizing coverage rate with the source image.
+        :param source: grayscale image of source.
+        :param target: grayscale image of target.
+        :return: Shifted target image.
+        """
+    source = np.uint8(source)
+    target = np.uint8(target)
+    src_minx, src_miny, src_minw, src_minh = getSingleMaxBoundingBoxOfImage(source)
+    tag_minx, tag_miny, tag_minw, tag_minh = getSingleMaxBoundingBoxOfImage(target)
+
+    # new rect of src and tag images
+    new_rect_x = min(src_minx, tag_minx)
+    new_rect_y = min(src_miny, tag_miny)
+    new_rect_w = max(src_minx + src_minw, tag_minx + tag_minw) - new_rect_x
+    new_rect_h = max(src_miny + src_minh, tag_miny + tag_minh) - new_rect_y
+
+    # offset 0
+    offset_y0 = -tag_miny
+    offset_x0 = -tag_minx
+
+    diff_x = source.shape[0] - tag_minw
+    diff_y = source.shape[1] - tag_minh
+
+    offset_x = 0
+    offset_y = 0
+
+    max_cr = -1000.0
+    for y in range(diff_y):
+        for x in range(diff_x):
+            new_tag_rect = np.ones(target.shape) * 255
+            new_tag_rect[tag_miny + offset_y0 + y: tag_miny + offset_y0 + y + tag_minh,
+            tag_minx + offset_x0 + x: tag_minx + offset_x0 + x + tag_minw] = target[tag_miny: tag_miny + tag_minh,
+                                                                             tag_minx: tag_minx + tag_minw]
+            cr = calculateCoverageArea(new_tag_rect, source)
+            print(cr)
+            if cr > max_cr:
+                offset_x = offset_x0 + x
+                offset_y = offset_y0 + y
+                max_cr = cr
+
+    new_tag_rect = np.ones(target.shape) * 255
+    new_tag_rect[tag_miny + offset_y: tag_miny + offset_y + tag_minh,
+    tag_minx + offset_x: tag_minx + offset_x + tag_minw] = target[tag_miny: tag_miny + tag_minh,
+                                                           tag_minx: tag_minx + tag_minw]
+
+    return new_tag_rect
+
+
 def shiftImageWithMaxCR(source, target):
     """
     Shift the target image based on the maximizing coverage rate with the source image.
@@ -361,10 +412,12 @@ def shiftImageWithMaxCR(source, target):
             tag_minx + offset_x0 + x: tag_minx + offset_x0 + x + tag_minw] = target[tag_miny: tag_miny + tag_minh,
                                                                              tag_minx: tag_minx + tag_minw]
             cr = calculateCoverageRate(new_tag_rect, source)
+            print(cr)
             if cr > max_cr:
                 offset_x = offset_x0 + x
                 offset_y = offset_y0 + y
                 max_cr = cr
+                print(max_cr)
 
     new_tag_rect = np.ones(target.shape) * 255
     new_tag_rect[tag_miny + offset_y: tag_miny + offset_y + tag_minh,
@@ -414,6 +467,21 @@ def calculateCoverageRate(source, target):
 
     cr = (p_valid - p_less - p_over) / p_valid * 100.0
     return cr
+
+
+def calculateCoverageArea(source, target):
+    """
+    Calcluate coverage rate.
+    :param source:
+    :param target:
+    :return:
+    """
+    area = 0
+    for i in range(source.shape[0]):
+        for j in range(source.shape[1]):
+            if source[i][j] == target[i][j] == 0.:
+                area += 1
+    return area
 
 
 def calculateSSIM(source, target):
@@ -980,14 +1048,15 @@ def getCrossAreaPointsOfSkeletionLine(image):
     return cross_points
 
 
-def getCrossPointsOfSkeletonLine(image):
+def getCrossPointsOfSkeletonLine(image, threshold=10):
     """
     Get the cross points of skeleton line.
     :param image: the skeleton grayscale image of character.
     :return: cross points of skeleton line of character.
     """
     cross_points = []
-    cross_points_no_extra = []
+    cross_points_merged = []
+    used_index = []
     if image is None:
         return cross_points
     # find cross points
@@ -1000,35 +1069,55 @@ def getCrossPointsOfSkeletonLine(image):
                 # cross points
                 if black_num >= 3:
                     cross_points.append((x, y))
+    # maintain only one point of several closed cross points
+    for i in range(len(cross_points)):
+        if i in used_index:
+            continue
+        curr_pt = cross_points[i]
+        closed_pt = curr_pt
+        for j in range(len(cross_points)):
+            if i == j:
+                continue
+            dist = math.sqrt((curr_pt[0] - cross_points[j][0])**2 + (curr_pt[1]-cross_points[j][1])**2)
+            if dist < threshold:
+                closed_pt = cross_points[j]
+                used_index.append(j)
 
-    # remove the extra cross points and maintain the single cross point of several close points
-    for (x, y) in cross_points:
-        black_num = 0
-        # P2
-        if image[y - 1][x] == 0.0 and (x, y - 1) in cross_points:
-            black_num += 1
-        # P4
-        if image[y][x + 1] == 0.0 and (x + 1, y) in cross_points:
-            black_num += 1
-        # P6
-        if image[y + 1][x] == 0.0 and (x, y + 1) in cross_points:
-            black_num += 1
-        # P8
-        if image[y][x - 1] == 0.0 and (x - 1, y) in cross_points:
-            black_num += 1
+        if curr_pt == closed_pt:
+            cross_points_merged.append(curr_pt)
+            used_index.append(i)
+        else:
+            cross_points_merged.append(closed_pt)
 
-        if black_num == 2 or black_num == 3 or black_num == 4:
-            # print(black_num)
-            cross_points_no_extra.append((x, y))
 
-        if (x, y) in cross_points and (x, y - 1) not in cross_points and (x + 1, y - 1) not in cross_points and (
-        x + 1, y) not in \
-                cross_points and (x + 1, y + 1) not in cross_points and (x, y + 1) not in cross_points and (
-        x - 1, y + 1) not in \
-                cross_points and (x - 1, y) not in cross_points and (x - 1, y - 1) not in cross_points:
-            cross_points_no_extra.append((x, y))
+    # # remove the extra cross points and maintain the single cross point of several close points
+    # for (x, y) in cross_points:
+    #     black_num = 0
+    #     # P2
+    #     if image[y - 1][x] == 0.0 and (x, y - 1) in cross_points:
+    #         black_num += 1
+    #     # P4
+    #     if image[y][x + 1] == 0.0 and (x + 1, y) in cross_points:
+    #         black_num += 1
+    #     # P6
+    #     if image[y + 1][x] == 0.0 and (x, y + 1) in cross_points:
+    #         black_num += 1
+    #     # P8
+    #     if image[y][x - 1] == 0.0 and (x - 1, y) in cross_points:
+    #         black_num += 1
+    #
+    #     if black_num == 2 or black_num == 3 or black_num == 4:
+    #         # print(black_num)
+    #         cross_points_no_extra.append((x, y))
+    #
+    #     if (x, y) in cross_points and (x, y - 1) not in cross_points and (x + 1, y - 1) not in cross_points and (
+    #     x + 1, y) not in \
+    #             cross_points and (x + 1, y + 1) not in cross_points and (x, y + 1) not in cross_points and (
+    #     x - 1, y + 1) not in \
+    #             cross_points and (x - 1, y) not in cross_points and (x - 1, y - 1) not in cross_points:
+    #         cross_points_no_extra.append((x, y))
 
-    return cross_points_no_extra
+    return cross_points_merged
 
 
 def removeExtraBranchesOfSkeleton(image, distance_threshod=20):
@@ -1884,6 +1973,7 @@ def getCropLines(corner_points_cluster, contours, distance=30):
     crop_lines = []
     if corner_points_cluster is None or contours is None:
         return crop_lines
+    print("corner_points_cluster num:", len(corner_points_cluster), len(corner_points_cluster[0]))
     for i in range(len(corner_points_cluster)):
         corner_clt = corner_points_cluster[i]
         if len(corner_clt) == 2:
